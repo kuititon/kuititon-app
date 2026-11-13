@@ -911,7 +911,7 @@ function applyLang(){
 
 /* app-wide settings (same for every account): theme, default invoice language, receipt categories */
 const GEN_KEY='innotate-books-general';
-S.gen={theme:'auto',lang:'',cats:null};
+S.gen={theme:'auto',lang:'',cats:null,ui:'fi'};
 try{const g=JSON.parse(localStorage.getItem(GEN_KEY)||'null');if(g&&typeof g==='object')S.gen={...S.gen,...g}}catch(e){}
 function applyTheme(){const t=S.gen.theme,r=document.documentElement;if(t==='light'||t==='dark')r.setAttribute('data-theme',t);else r.removeAttribute('data-theme')}
 /* project accounts: cost tracking only, no invoicing; clients are shown as contractors; they have their own category list */
@@ -3070,8 +3070,8 @@ async function boot(){
   },()=>{});
   db.doc('meta/general').onSnapshot(sn=>{
     S.genLoaded=true;
-    if(sn.exists){const act=document.activeElement;const typing=act&&act.dataset&&act.dataset.gc;const wf=isFi();S.gen={theme:'auto',lang:'',cats:null,...clone(sn.data())};applyTheme();if(isFi()!==wf)applyLang();if(!typing)applyCats();try{localStorage.setItem(GEN_KEY,JSON.stringify(S.gen))}catch(e){}scheduleRender()}
-    else if(S.gen.setupDone){S.gen={theme:'auto',lang:'',cats:null,ui:S.gen.ui};try{localStorage.removeItem(GEN_KEY)}catch(e){}setupShown=false;scheduleRender()}
+    if(sn.exists){const act=document.activeElement;const typing=act&&act.dataset&&act.dataset.gc;const wf=isFi();S.gen={theme:'auto',lang:'',cats:null,ui:'fi',...clone(sn.data())};applyTheme();if(isFi()!==wf)applyLang();if(!typing)applyCats();try{localStorage.setItem(GEN_KEY,JSON.stringify(S.gen))}catch(e){}scheduleRender()}
+    else if(S.gen.setupDone){S.gen={theme:'auto',lang:'',cats:null,ui:S.gen.ui||'fi'};try{localStorage.removeItem(GEN_KEY)}catch(e){}setupShown=false;scheduleRender()}
     else if(S.gen.cats||S.gen.theme!=='auto'||S.gen.lang)saveGen();
   },()=>{});
   if(S.acct)subscribeAccount();

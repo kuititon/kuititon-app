@@ -16,7 +16,7 @@
   /* ---------- language (auth screens only; the app has its own) ---------- */
   function fi() {
     try { var g = JSON.parse(localStorage.getItem('innotate-books-general') || '{}'); if (g.ui) return g.ui === 'fi'; } catch (e) {}
-    return /^fi/i.test(navigator.language || '');
+    return true; /* Finnish is the default */
   }
   var T = {
     'Sign in': 'Kirjaudu sisään', 'Register': 'Rekisteröidy', 'Email': 'Sähköposti', 'Password': 'Salasana',
