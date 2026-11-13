@@ -1061,7 +1061,7 @@ async function saveSettings(){
 async function syncAccountName(){
   const name=S.settings.bizName||'Account';
   const a=S.accounts.find(x=>x.id===S.acct);
-  if(a&&a.name===name)return;
+  if(a&&(a.name===name||!S.settings.bizName))return; /* never overwrite a name with the placeholder (e.g. a logo saved mid-wizard) */
   if(a)a.name=name;else S.accounts.push({id:S.acct,name});
   await saveAccounts();
 }
@@ -1149,7 +1149,7 @@ function subscribeAccount(){
     const cur=S.accounts.find(x=>x.id===myAcct);
     if(sn.exists){if(!editing){const was=settingsDirty();S.settings={...DEF,...clone(sn.data())};if(!was){S.setSnap=settingsSnap();S.setSnapVals=JSON.stringify(S.settings)}}}
     else if(myAcct!=='main'){S.settings={...DEF,bizName:(cur&&cur.name)||'',web:''}}
-    if(cur&&S.settings.bizName&&sn.exists)cur.name=S.settings.bizName;
+    if(cur&&S.settings.bizName&&sn.exists&&cur.name!==S.settings.bizName){cur.name=S.settings.bizName;if(S.accountsLoaded)saveAccounts()}
     renderAcctBar();
     if(!first.settings){first.settings=1;done()}else scheduleRender();
   },err));
@@ -3062,9 +3062,9 @@ async function boot(){
   db.doc('meta/accounts').onSnapshot(sn=>{
     if(sn.exists){
       const l=(clone(sn.data()).list||[]).filter(x=>x&&x.id);
-      S.accounts=l;
+      S.accounts=l;S.accountsLoaded=true;
       const cur=S.accounts.find(x=>x.id===S.acct);
-      if(cur&&S.loaded&&S.settings.bizName)cur.name=S.settings.bizName;
+      if(cur&&S.settings.bizName&&cur.name!==S.settings.bizName){cur.name=S.settings.bizName;saveAccounts()}
       if(!cur){S.acct=S.accounts.length?S.accounts[0].id:'';try{localStorage.setItem('innotate-books-acct',S.acct)}catch(e){}if(S.acct)subscribeAccount();else{enterNone();scheduleRender()}}
     }
     renderAcctBar();
