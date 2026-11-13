@@ -3043,7 +3043,8 @@ document.addEventListener('click',e=>{const im=e.target.closest&&e.target.closes
 
 /* ---------- boot ---------- */
 async function boot(){
-  const h=location.hash.slice(1);if(VIEWS[h])S.tab=h;
+  /* always start on the home page when the app is opened or the user signs in */
+  S.tab='home';try{if(location.hash)history.replaceState(null,'',location.pathname+location.search)}catch(e){}
   try{S.acct=localStorage.getItem('innotate-books-acct')||'main'}catch(e){}
   renderAcctBar();render();startI18n();
   const use=n=>(window.claude&&window.claude.use?window.claude.use(n).catch(()=>null):Promise.resolve(null));
@@ -3167,6 +3168,7 @@ function setupNext(){
 const TT2=t=>isFi()?TT(t):t;
 const sendMissing=()=>[['iban','IBAN']].filter(x=>!String(S.settings[x[0]]||'').trim()).map(x=>x[1]);
 function openSetup(){
+  try{const ku=window.kuititon&&window.kuititon.user&&window.kuititon.user();if(ku){if(!S.gen.fullName&&ku.name)S.gen.fullName=ku.name;if(!S.gen.email&&ku.email)S.gen.email=ku.email}}catch(e){}
   setupBackup={bizName:S.settings.bizName,web:S.settings.web};
   if(S.settings.bizName===DEF.bizName)S.settings.bizName='';
   if(S.settings.web===DEF.web)S.settings.web='';

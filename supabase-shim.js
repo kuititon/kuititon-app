@@ -418,6 +418,7 @@
   window.kuititon = {
     signOut: function () { return sb.auth.signOut(); },
     changePassword: changePassword,
+    user: function () { var u = (session && session.user) || {}; return { name: (u.user_metadata && u.user_metadata.full_name) || '', email: u.email || '' }; },
     sb: sb
   };
 
