@@ -3202,7 +3202,8 @@ async function setupFinish(skip){
   closeSheet();
   await saveGen();
   if(!skip)await saveSettings();
-  scheduleRender();
+  if(S.tab!=='home')go('home',true);else scheduleRender();
+  window.scrollTo(0,0);
 }
 function maybeSetup(){if(setupShown||!setupNeeded())return;setupShown=true;setupFresh=true;setTimeout(openSetup,0)}
 
