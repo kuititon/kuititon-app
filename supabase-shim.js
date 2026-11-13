@@ -27,7 +27,7 @@
     'Code': 'Koodi', 'Confirm': 'Vahvista', 'Send a new code': 'Lähetä uusi koodi', 'Back': 'Takaisin',
     'Reset password': 'Nollaa salasana', 'Send code': 'Lähetä koodi', 'New password': 'Uusi salasana',
     'Repeat new password': 'Toista uusi salasana', 'Save password': 'Tallenna salasana', 'Cancel': 'Peruuta',
-    'Change password': 'Vaihda salasana',
+    'Change password': 'Vaihda salasana', 'Show password': 'Näytä salasana', 'Hide password': 'Piilota salasana',
     'Password rules': 'Salasanan vaatimukset',
     'At least 8 characters, a capital letter, a number and a special character.': 'Vähintään 8 merkkiä, iso kirjain, numero ja erikoismerkki.',
     'Passwords do not match.': 'Salasanat eivät täsmää.',
@@ -72,6 +72,7 @@
       '#kauth .kl{display:block;margin:16px 0 0;background:none;border:0;padding:6px 0;font:600 15px Inter,system-ui,sans-serif;color:inherit;text-decoration:underline;cursor:pointer;text-align:left}' +
       '#kauth .ke{color:var(--bad,#b3261e);font-weight:600;margin:0 0 12px}#kauth .km{color:var(--ok,#1d7448);font-weight:600;margin:0 0 12px}#kauth .kh{font-size:13px;margin:-6px 0 14px}' +
       '#kauth .kcode{letter-spacing:.3em;font-size:22px;text-align:center}' +
+      '.kpw{position:relative}.kpw .keye{position:absolute;right:2px;top:0;bottom:0;width:48px;display:flex;align-items:center;justify-content:center;background:none!important;border:0!important;padding:0;min-height:0!important;flex:none!important;color:var(--muted,#5d7568);cursor:pointer;border-radius:12px}.kpw .keye:focus-visible{outline:2px solid var(--accent-text,#1f6b3a)}' +
       '#kmodal{position:fixed;inset:0;z-index:9100;display:grid;place-items:center;padding:20px;background:rgba(10,12,14,.55)}#kmodal .kbox{background:var(--surface,#fff);color:var(--ink,#0e2219);border-radius:24px;padding:22px 20px;width:100%;max-width:380px}' +
       '#kmodal h3{margin:0 0 12px;font:700 20px Inter,system-ui,sans-serif}' +
       '#kmodal .kf{margin:0 0 12px}#kmodal label{display:block;font:600 12px Inter,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#5d7568);margin:0 0 5px}' +
@@ -80,9 +81,21 @@
       '#kmodal .ke{color:var(--bad,#b3261e);font-weight:600;margin:0 0 10px}';
     document.head.appendChild(s);
   }
+  var EYE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19C5 19 1 12 1 12a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
   function field(id, label, type, val, extra) {
-    return '<div class="kf"><label for="' + id + '">' + esc(t(label)) + '</label><input id="' + id + '" type="' + type + '" value="' + esc(val || '') + '" ' + (extra || '') + '></div>';
+    var inp = '<input id="' + id + '" type="' + type + '" value="' + esc(val || '') + '" ' + (extra || '') + '>';
+    if (type === 'password') inp = '<div class="kpw">' + inp.replace('<input ', '<input style="padding-right:52px" ') + '<button type="button" class="keye" data-eye="' + id + '" aria-label="' + esc(t('Show password')) + '" title="' + esc(t('Show password')) + '">' + EYE + '</button></div>';
+    return '<div class="kf"><label for="' + id + '">' + esc(t(label)) + '</label>' + inp + '</div>';
   }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-eye]'); if (!b) return;
+    e.preventDefault();
+    var i = document.getElementById(b.dataset.eye); if (!i) return;
+    var show = i.type === 'password'; i.type = show ? 'text' : 'password';
+    var lbl = t(show ? 'Hide password' : 'Show password');
+    b.innerHTML = show ? EYE_OFF : EYE; b.setAttribute('aria-label', lbl); b.title = lbl; i.focus();
+  });
   function status() {
     return (ui.err ? '<p class="ke" role="alert">' + esc(ui.err) + '</p>' : '') + (ui.msg ? '<p class="km">' + esc(ui.msg) + '</p>' : '');
   }
