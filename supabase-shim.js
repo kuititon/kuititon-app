@@ -180,7 +180,19 @@
     if (r.data) profile = r.data;
     return profile;
   }
+  /* The app caches settings in this browser (account choice, "setup done", language). If a different person signs in on the
+     same browser, that cache must not carry over, otherwise the new user skips the setup wizard or lands in the wrong account. */
+  function otherUserCache(uid) {
+    try {
+      if (localStorage.getItem('kuititon-uid') === uid) return false;
+      Object.keys(localStorage).filter(function (k) { return k.indexOf('innotate-books') === 0 || k === 'innotate-range' || k === 'innotate-period'; })
+        .forEach(function (k) { localStorage.removeItem(k); });
+      localStorage.setItem('kuititon-uid', uid);
+      return true;
+    } catch (e) { return false; }
+  }
   function start(s) {
+    if (otherUserCache(s.user.id)) { location.reload(); return; }
     session = s; userId = s.user.id;
     loadProfile().then(function () {
       if (overlay) { overlay.remove(); overlay = null; }
