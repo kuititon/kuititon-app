@@ -171,6 +171,20 @@ h2{font:600 13px/1.2 var(--body);margin:26px 0 8px;letter-spacing:.08em;text-tra
 .sutype .tp{display:block;font-size:13px;font-weight:600;margin-top:8px;line-height:1.3}
 .sutype .tc{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center}
 .sutype .tc svg{width:14px;height:14px;fill:none;stroke:var(--accent-ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.pp-wrap{position:fixed;inset:0;z-index:70}
+.pp-bg{position:absolute;inset:0;background:rgba(10,18,14,.55);animation:ppf .2s ease}
+.pp{position:absolute;left:0;right:0;bottom:0;max-width:720px;margin:0 auto;max-height:92dvh;display:flex;flex-direction:column;background:var(--bg);border-radius:24px 24px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);animation:pps .3s cubic-bezier(.2,.9,.3,1);transition:transform .2s}
+.pp-head{flex:none;touch-action:none}
+.pp-grab{width:40px;height:5px;border-radius:99px;background:var(--line);margin:10px auto 0}
+.pp-top{display:flex;align-items:center;justify-content:center;position:relative;padding:10px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+.pp-top h3{margin:0;font:700 17px var(--display)}
+.pp-x{appearance:none;border:0;position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.pp-x svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.pp-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pp-body{overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:4px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.pp-wrap.closing .pp{transform:translateY(100%)}.pp-wrap.closing .pp-bg{opacity:0;transition:opacity .2s}
+@keyframes ppf{from{opacity:0}}@keyframes pps{from{transform:translateY(100%)}}
+@media (prefers-reduced-motion:reduce){.pp,.pp-bg{animation:none}}
 .sutype.off{opacity:.45;pointer-events:none}
 .sutag{display:inline-block;margin-left:8px;vertical-align:2px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-text)}
 .sutype.on .sutag{background:var(--surface)}
@@ -1626,6 +1640,16 @@ function viewSettings(){
 const TRASH_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const SUB_PRICES={business:{month:'7,90',year:'79',perMonth:'6,58',save:'15,80'},projects:{month:'3,90',year:'39',perMonth:'3,25',save:'7,80'}};
 S.subPlan='business';S.subIvl='year';
+function subPick(i){
+    const sp=S.subPlan==='projects'?'projects':'business',sv=S.subIvl==='month'?'month':'year',P=SUB_PRICES[sp];
+    const seg=`<div class="seg full" role="group" aria-label="${L('Plan','Tilaus')}"><span class="seg-pill" aria-hidden="true"></span>${[['business',L('Business','Yrittäjille')],['projects',L('Projects','Projekteille')]].map(x=>`<button type="button" data-act="subPlanSeg" data-id="${x[0]}" aria-pressed="${sp===x[0]}">${x[1]}</button>`).join('')}</div>`;
+    const pk=v=>{const on=sv===v,y=v==='year';return `<button type="button" class="plpick" role="radio" aria-checked="${on}" data-act="subInt" data-v="${v}"><span class="pldot" aria-hidden="true"></span><span class="plt"><b>${y?L('Year','Vuosi'):L('Month','Kuukausi')}${y?` <span class="plbadge">${L('Save '+P.save+' €','Säästät '+P.save+' €')}</span>`:''}</b>${y?`<span>${L('that is '+P.perMonth+' € / month','eli '+P.perMonth+' € / kk')}</span>`:''}</span><span class="plp">${y?P.year+' € / '+L('yr','v'):P.month+' € / '+L('mo','kk')}</span></button>`};
+    const td=(l,a,b)=>`<tr><td>${l}</td><td class="${sp==='business'?'on':''}">${a}</td><td class="${sp==='projects'?'on':''}">${b}</td></tr>`,no='<span class="no">–</span>',ck='✓';
+    const tbl=`<table class="plcmp"><thead><tr><th></th><th class="${sp==='business'?'on':''}">${L('Business','Yrittäjille')}</th><th class="${sp==='projects'?'on':''}">${L('Projects','Projekteille')}</th></tr></thead><tbody>${td(L('Invoices','Laskut'),ck,no)}${td(L('Receipts','Kuitit'),ck,ck)}${td(L('Business accounts','Yritystilit'),'1',no)}${td(L('Project accounts','Projektitilit'),'3','3')}</tbody></table>`;
+    const card=`<div class="card" style="margin-bottom:10px">${seg}<div class="plpicks" role="radiogroup" aria-label="${L('Billing period','Laskutusjakso')}" style="margin-top:12px">${pk('month')}${pk('year')}</div>${tbl}<button class="btn primary" style="width:100%;margin-top:12px" data-act="subCheckout" data-plan="${sp}">${L('Start subscription','Aloita tilaus')}</button></div>`;
+    const fine=`<span class="small muted">${L('All prices include VAT. Payment is handled securely by our payment provider. You can cancel any time.','Kaikki hinnat sisältävät ALV:n. Maksun käsittelee turvallisesti maksupalveluntarjoaja. Voit peruuttaa milloin tahansa.')}</span>`;
+    return {card,fine};
+}
 function subSection(){
   const B=window.kuititon&&window.kuititon.billing;if(!B)return '';
   const i=B.info();
@@ -1642,14 +1666,8 @@ function subSection(){
     }
   }else{
     st=`<div class="notice${trialOver()?'':' info'}">${trialOver()?L('Your free trial has ended. Choose a subscription to continue.','Ilmainen kokeilujaksosi on päättynyt. Valitse tilaus jatkaaksesi.'):L('Free trial: '+trialLeft()+(trialLeft()===1?' day':' days')+' left.','Ilmainen kokeilu: '+trialLeft()+(trialLeft()===1?' päivä':' päivää')+' jäljellä.')}</div>`;
-    const sp=S.subPlan==='projects'?'projects':'business',sv=S.subIvl==='month'?'month':'year',P=SUB_PRICES[sp];
-    const seg=`<div class="seg full" role="group" aria-label="${L('Plan','Tilaus')}"><span class="seg-pill" aria-hidden="true"></span>${[['business',L('Business','Yrittäjille')],['projects',L('Projects','Projekteille')]].map(x=>`<button type="button" data-act="subPlanSeg" data-id="${x[0]}" aria-pressed="${sp===x[0]}">${x[1]}</button>`).join('')}</div>`;
-    const pk=v=>{const on=sv===v,y=v==='year';return `<button type="button" class="plpick" role="radio" aria-checked="${on}" data-act="subInt" data-v="${v}"><span class="pldot" aria-hidden="true"></span><span class="plt"><b>${y?L('Year','Vuosi'):L('Month','Kuukausi')}${y?` <span class="plbadge">${L('Save '+P.save+' €','Säästät '+P.save+' €')}</span>`:''}</b>${y?`<span>${L('that is '+P.perMonth+' € / month','eli '+P.perMonth+' € / kk')}</span>`:''}</span><span class="plp">${y?P.year+' € / '+L('yr','v'):P.month+' € / '+L('mo','kk')}</span></button>`};
-    const td=(l,a,b)=>`<tr><td>${l}</td><td class="${sp==='business'?'on':''}">${a}</td><td class="${sp==='projects'?'on':''}">${b}</td></tr>`,no='<span class="no">–</span>',ck='✓';
-    const tbl=`<table class="plcmp"><thead><tr><th></th><th class="${sp==='business'?'on':''}">${L('Business','Yrittäjille')}</th><th class="${sp==='projects'?'on':''}">${L('Projects','Projekteille')}</th></tr></thead><tbody>${td(L('Invoices','Laskut'),ck,no)}${td(L('Receipts','Kuitit'),ck,ck)}${td(L('Business accounts','Yritystilit'),'1',no)}${td(L('Project accounts','Projektitilit'),'3','3')}</tbody></table>`;
-    btn=`<div class="card" style="margin-bottom:10px">${seg}<div class="plpicks" role="radiogroup" aria-label="${L('Billing period','Laskutusjakso')}" style="margin-top:12px">${pk('month')}${pk('year')}</div>${tbl}<button class="btn primary" style="width:100%;margin-top:12px" data-act="subCheckout" data-plan="${sp}">${L('Start subscription','Aloita tilaus')}</button></div>`
-      +(i.hasCustomer?`<div class="actions"><button class="btn" data-act="subPortal">${L('Payment history and card','Maksuhistoria ja maksukortti')}</button></div>`:'')
-      +`<span class="small muted">${L('All prices include VAT. Payment is handled securely by Stripe. You can cancel any time.','Kaikki hinnat sisältävät ALV:n. Maksun käsittelee turvallisesti Stripe. Voit peruuttaa milloin tahansa.')}</span>`;
+    const pk2=subPick(i);
+    btn=pk2.card+(i.hasCustomer?`<div class="actions"><button class="btn" data-act="subPortal">${L('Payment history and card','Maksuhistoria ja maksukortti')}</button></div>`:'')+pk2.fine;
   }
   return `<h2 id="subSec">${L('Subscription','Tilaus')}</h2><div data-notr>${st}${btn}</div>`;
 }
@@ -3033,9 +3051,39 @@ const ACT={
 };
 ['newRec','newCli','budEdit','pdf','mSelMode','mSelDel','mSelDl','pkgDl','csvInv','csvRec'].forEach(k=>{const f=ACT[k];if(f)ACT[k]=(...a)=>{if(trialStop())return;return f(...a)}});
 ACT.trialTest=async a=>{const v=a.dataset.v;try{await window.kuititon.setPlan(v);if(v==='trial'){S.gen.trialInvIds=[];saveGen()}render();toast(L('Subscription status changed','Tilauksen tila vaihdettu'))}catch(e){toast(L('Could not change status','Tilan vaihto epäonnistui'),4000)}};
-ACT.subInt=a=>{S.subIvl=a.dataset.v==='month'?'month':'year';scheduleRender()};
-ACT.subPlanSeg=a=>{const old=segGeo();S.subPlan=a.dataset.id==='projects'?'projects':'business';render();placeSeg(old)};
-ACT.subOpen=()=>{go('general');setTimeout(()=>{const e=document.getElementById('subSec');if(e)e.scrollIntoView({block:'start'})},250)};
+ACT.subInt=a=>{S.subIvl=a.dataset.v==='month'?'month':'year';if(ppEl)ppRefresh();else scheduleRender()};
+ACT.subPlanSeg=a=>{const R=ppEl||document,old=segGeo(R);S.subPlan=a.dataset.id==='projects'?'projects':'business';if(ppEl){ppRefresh();placeSeg(old,ppEl)}else{render();placeSeg(old)}};
+/* plan picker popup (bottom sheet) */
+let ppEl=null,ppEsc=null;
+function ppBody(){
+  const B=window.kuititon&&window.kuititon.billing,i=B?B.info():{},pk=subPick(i);
+  const st=trialOver()?L('Your free trial has ended. Choose a subscription to continue.','Ilmainen kokeilujaksosi on päättynyt. Valitse tilaus jatkaaksesi.'):L('Free trial: '+trialLeft()+(trialLeft()===1?' day':' days')+' left.','Ilmainen kokeilu: '+trialLeft()+(trialLeft()===1?' päivä':' päivää')+' jäljellä.');
+  return `<div class="notice${trialOver()?'':' info'}">${st}</div>${pk.card}${i.hasCustomer?`<div class="actions"><button class="btn" data-act="subPortal">${L('Payment history and card','Maksuhistoria ja maksukortti')}</button></div>`:''}${pk.fine}`;
+}
+function ppRefresh(){if(!ppEl)return;const b=ppEl.querySelector('.pp-body');b.innerHTML=ppBody();placeSeg(null,ppEl)}
+function ppClose(){
+  if(!ppEl)return;const el=ppEl;ppEl=null;document.removeEventListener('keydown',ppEsc);
+  el.classList.add('closing');setTimeout(()=>{el.remove();if(!sheets.length)document.body.style.overflow=''},200);
+}
+function openPlanPopup(){
+  if(ppEl)return;
+  const el=document.createElement('div');el.className='pp-wrap';
+  el.innerHTML=`<div class="pp-bg" data-act="ppClose"></div><div class="pp" role="dialog" aria-modal="true" aria-label="${L('Choose your plan','Valitse tilaus')}" data-notr><div class="pp-head"><div class="pp-grab"></div><div class="pp-top"><h3>${L('Choose your plan','Valitse tilaus')}</h3><button type="button" class="pp-x" data-act="ppClose" aria-label="${L('Close','Sulje')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div><div class="pp-body"></div></div>`;
+  document.body.appendChild(el);ppEl=el;document.body.style.overflow='hidden';
+  el.querySelector('.pp-body').innerHTML=ppBody();
+  placeSeg(null,el);
+  ppEsc=e=>{if(e.key==='Escape')ppClose()};document.addEventListener('keydown',ppEsc);
+  /* drag the header down to close */
+  const pp=el.querySelector('.pp'),hd=el.querySelector('.pp-head');let y0=null,dy=0;
+  hd.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;dy=0;pp.style.transition='none'},{passive:true});
+  hd.addEventListener('touchmove',e=>{if(y0==null)return;dy=Math.max(0,e.touches[0].clientY-y0);pp.style.transform='translateY('+dy+'px)'},{passive:true});
+  hd.addEventListener('touchend',()=>{if(y0==null)return;y0=null;pp.style.transition='';if(dy>90)ppClose();else pp.style.transform=''});
+}
+ACT.ppClose=()=>ppClose();
+ACT.subOpen=()=>{
+  const B=window.kuititon&&window.kuititon.billing;
+  if(B&&!S.gen.sub){openPlanPopup();return}
+  go('general');setTimeout(()=>{const e=document.getElementById('subSec');if(e)e.scrollIntoView({block:'start'})},250)};
 const subErr=e=>{const c=e&&e.code;toast(c==='not_configured'?L('Payments are not available yet.','Maksut eivät ole vielä käytössä.'):c==='already_subscribed'?L('You already have a subscription. Use Manage subscription.','Sinulla on jo tilaus. Käytä Hallinnoi tilausta -painiketta.'):L('Could not open the payment page. Try again.','Maksusivun avaaminen epäonnistui. Yritä uudelleen.'),5000)};
 ACT.subCheckout=async a=>{const B=window.kuititon&&window.kuititon.billing;if(!B||a.disabled)return;a.disabled=true;try{await B.checkout(a.dataset.plan,S.subIvl==='month'?'month':'year')}catch(e){a.disabled=false;subErr(e)}};
 ACT.subPortal=async a=>{const B=window.kuititon&&window.kuititon.billing;if(!B||a.disabled)return;a.disabled=true;try{await B.portal()}catch(e){a.disabled=false;subErr(e)}};
