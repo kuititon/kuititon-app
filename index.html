@@ -2257,10 +2257,10 @@ function openReceipt(id,isNewObj){
   const splitNote=()=>{const sp=splitInfo(r);if(!sp)return '';return `<div class="splnote"><div>${L('This receipt is part '+sp.k+' of '+sp.n+' of a split receipt.'+(r.imageId?' The file below is the full original receipt.':''),'Tämä kuitti on osa '+sp.k+'/'+sp.n+' jaetusta kuitista.'+(r.imageId?' Alla oleva tiedosto on koko alkuperäinen kuitti.':''))}</div>${sp.g.filter(x=>x.id!==r.id).map(x=>`<button type="button" class="btn sm" data-act="recSib" data-id="${esc(x.id)}">${esc(catName(x.category))} · ${money(x.total)}</button>`).join('')}</div>`};
   /* rows that belong to the other part(s) of a split receipt: shown dimmed, ticking one moves it here */
   const othRows=()=>{const sp=splitInfo(r);if(!sp||r.billedInvoiceId)return [];return sp.g.filter(x=>x.id!==r.id&&!x.billedInvoiceId).flatMap(sb=>(sb.items||[]).map((x,i)=>({sb,i,x})))};
-  const othOff=x=>x.incl===false?' · '+L('not counted as expense','ei lasketa kuluksi'):'';
+  const othLbl=(sb,x)=>x.incl===false?L('not counted as expense','ei lasketa kuluksi'):othTag(sb);
   const othTag=sb=>{const sp=splitInfo(sb);return (sp?L('Part ','Osa ')+sp.k+'/'+sp.n+' · ':'')+catName(sb.category)};
-  const othView=()=>othRows().map(({sb,x})=>`<div class="line done off"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted" data-notr>${esc(othTag(sb))}${othOff(x)}</div></div><div class="mono dam">${money(x.total||0)}</div></div></div>`).join('');
-  const othEdit=()=>othRows().map(({sb,i,x})=>`<label class="itm off"><input type="checkbox" class="ick" data-oth="${esc(sb.id)}" data-oi="${i}" aria-label="${esc(L('Move this row to this part','Siirrä tämä rivi tähän osaan'))}"><div class="ib"><div>${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}</div><div class="small muted" data-notr>${esc(othTag(sb))} · ${fmtRate(+x.vatRate||0)} % ${L('VAT','ALV')}${othOff(x)}</div></div><div class="mono">${money(x.total||0)}</div></label>`).join('');
+  const othView=()=>othRows().map(({sb,x})=>`<div class="line done off"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted" data-notr>${esc(othLbl(sb,x))}</div></div><div class="mono dam">${money(x.total||0)}</div></div></div>`).join('');
+  const othEdit=()=>othRows().map(({sb,i,x})=>`<label class="itm off"><input type="checkbox" class="ick" data-oth="${esc(sb.id)}" data-oi="${i}" aria-label="${esc(L('Move this row to this part','Siirrä tämä rivi tähän osaan'))}"><div class="ib"><div>${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}</div><div class="small muted" data-notr>${esc(othLbl(sb,x))} · ${fmtRate(+x.vatRate||0)} % ${L('VAT','ALV')}</div></div><div class="mono">${money(x.total||0)}</div></label>`).join('');
   const moveRow=async(sid,i)=>{const sb=S.receipts.find(x=>x.id===sid);if(!sb||sb.billedInvoiceId||r.billedInvoiceId)return;const s2=clone(sb);if(!s2.items||!s2.items[i])return;const [x]=s2.items.splice(i,1);
     r.items=r.items||[];r.items.push({...x,incl:true});itRecalc();
     try{if(s2.items.length)await save('receipts',recSum(s2));else await drop('receipts',s2.id);await save('receipts',r)}catch(err){return}
@@ -2435,7 +2435,9 @@ function openReceipt(id,isNewObj){
     if(a.dataset.act==='itEditOn'){itEdit=true;redraw()}
     if(a.dataset.act==='itEditOff'){itEdit=false;redraw()}
     if(a.dataset.act==='itAdd'){r.items=r.items||[];r.items.push({id:uid(),desc:'',total:0,vatRate:+r.vatRate||(+S.settings.defVat||25.5),incl:true});redraw();commit()}
-    if(a.dataset.act==='itDel'){ask={t:'item',i:+a.dataset.i};redraw()}
+    if(a.dataset.act==='itDel'){const di=+a.dataset.i,x=(r.items||[])[di];
+      if(x&&splitInfo(r)&&((x.desc||'').trim()||x.total)){commit();x.incl=false;redraw();commit();toast(L('Row set as not counted. You can tick it back or move it to the other part.','Rivi merkitty ei lasketuksi. Voit valita sen takaisin tai siirtää toiseen osaan.'));return}
+      ask={t:'item',i:di};redraw()}
     if(a.dataset.act==='itDelYes'){commit();const di=ask.i,[gone]=r.items.splice(di,1);ask=null;if(r.items.length)itRecalc();redraw();commit();
       offerAction(L('Item removed','Tuote poistettu'),L('Undo','Kumoa'),async()=>{if(!document.body.contains(root)||!gone)return;r.items.splice(Math.min(di,r.items.length),0,gone);itRecalc();redraw();commit()})}
     if(a.dataset.act==='itAll'||a.dataset.act==='itNone'){r.items.forEach(x=>{x.incl=a.dataset.act==='itAll'});redraw();commit()}
