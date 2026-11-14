@@ -1739,8 +1739,14 @@ let lastProjMode=false;
 function viewNoAcct(){
   return head('Accounts','',0)+`<div class="empty" data-notr><strong>${L('Get started by adding a new account','Aloita lisäämällä uusi tili')}</strong><div style="margin-top:12px"><button class="btn primary" data-act="emptyAdd">${L('+ Add new account','+ Lisää uusi tili')}</button></div></div>`;
 }
+let holdT=null,holdOver=false,heldOn=false;
+/* a brand-new account: keep the home screen hidden until we know whether the setup wizard is needed, so it never flashes before the wizard */
+const firstRunHold=()=>!setupSh&&!holdOver&&S.acct==='main'&&!S.gen.setupDone&&!S.clients.length&&!S.invoices.length&&!S.receipts.length&&!S.settings.iban&&!S.settings.bizId&&(!S.loaded||!S.genLoaded);
 function render(){
   const a=$('#app');
+  if(firstRunHold()){heldOn=true;document.body.classList.add('in-setup');a.innerHTML='<div class="small muted" style="padding:48px 0;text-align:center" data-notr>'+L('Loading…','Ladataan…')+'</div>';if(!holdT)holdT=setTimeout(()=>{holdOver=true;scheduleRender()},6000);return}
+  if(heldOn){heldOn=false;if(!setupSh)document.body.classList.remove('in-setup')}
+  if(!setupSh&&!setupShown&&setupNeeded()){setupShown=true;setupFresh=true;openSetup()}
   document.body.classList.toggle('no-acct',!S.accounts.length);
   if(!S.accounts.length&&S.loaded&&!['general','cats','units'].includes(S.tab)){a.innerHTML=viewNoAcct();document.body.classList.remove('sub','acctedit');renderQueue();return}
   const keep=['settings','general','cats','units'].includes(S.tab)&&a.contains(document.activeElement)&&document.activeElement.matches('input,select');
