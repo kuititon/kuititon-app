@@ -2255,21 +2255,27 @@ function openReceipt(id,isNewObj){
   const itSumText=()=>{const e=recExp(r),ex=(r.total||0)-e.gross;return 'Counted as expense: '+money(e.gross)+' (VAT '+money(e.vat)+')'+(ex>0?' · Left out: '+money(ex):'')};
   const splitBtn=()=>(!isNew&&!r.billedInvoiceId&&(r.items||[]).length>=2)?`<div class="actions" style="margin-top:10px"><button class="btn" data-act="recSplit">${L('Split by category','Jaa kategorioihin')}</button></div>`:'';
   const splitNote=()=>{const sp=splitInfo(r);if(!sp)return '';return `<div class="splnote"><div>${L('This receipt is part '+sp.k+' of '+sp.n+' of a split receipt.'+(r.imageId?' The file below is the full original receipt.':''),'Tämä kuitti on osa '+sp.k+'/'+sp.n+' jaetusta kuitista.'+(r.imageId?' Alla oleva tiedosto on koko alkuperäinen kuitti.':''))}</div>${sp.g.filter(x=>x.id!==r.id).map(x=>`<button type="button" class="btn sm" data-act="recSib" data-id="${esc(x.id)}">${esc(catName(x.category))} · ${money(x.total)}</button>`).join('')}</div>`};
-  const otherRows=()=>{const sp=splitInfo(r);if(!sp||r.billedInvoiceId)return '';
-    const rows=sp.g.filter(x=>x.id!==r.id).flatMap(sb=>(sb.items||[]).map((x,i)=>({sb,i,x})));if(!rows.length)return '';
-    return `<div class="f"><span class="lab">${L('Rows in the other part','Rivit toisessa osassa')}</span><div class="itfold">${rows.map(({sb,i,x})=>`<div class="line done"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted">${esc(catName(sb.category))} · ${fmtRate(+x.vatRate||0)} % ${L('VAT','ALV')}</div></div><div class="mono dam">${money(x.total||0)}</div></div><button type="button" class="btn sm" data-act="rowHere" data-s="${esc(sb.id)}" data-i="${i}">${L('Move here','Siirrä tähän')}</button></div>`).join('')}</div></div>`};
+  /* rows that belong to the other part(s) of a split receipt: shown dimmed, ticking one moves it here */
+  const othRows=()=>{const sp=splitInfo(r);if(!sp||r.billedInvoiceId)return [];return sp.g.filter(x=>x.id!==r.id&&!x.billedInvoiceId).flatMap(sb=>(sb.items||[]).map((x,i)=>({sb,i,x})))};
+  const othTag=sb=>{const sp=splitInfo(sb);return (sp?L('Part ','Osa ')+sp.k+'/'+sp.n+' · ':'')+catName(sb.category)};
+  const othView=()=>othRows().map(({sb,x})=>`<div class="line done off"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted" data-notr>${esc(othTag(sb))}</div></div><div class="mono dam">${money(x.total||0)}</div></div></div>`).join('');
+  const othEdit=()=>othRows().map(({sb,i,x})=>`<label class="itm off"><input type="checkbox" class="ick" data-oth="${esc(sb.id)}" data-oi="${i}" aria-label="${esc(L('Move this row to this part','Siirrä tämä rivi tähän osaan'))}"><div class="ib"><div>${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}</div><div class="small muted" data-notr>${esc(othTag(sb))} · ${fmtRate(+x.vatRate||0)} % ${L('VAT','ALV')}</div></div><div class="mono">${money(x.total||0)}</div></label>`).join('');
+  const moveRow=async(sid,i)=>{const sb=S.receipts.find(x=>x.id===sid);if(!sb||sb.billedInvoiceId||r.billedInvoiceId)return;const s2=clone(sb);if(!s2.items||!s2.items[i])return;const [x]=s2.items.splice(i,1);
+    r.items=r.items||[];r.items.push({...x,incl:true});itRecalc();
+    try{if(s2.items.length)await save('receipts',recSum(s2));else await drop('receipts',s2.id);await save('receipts',r)}catch(err){return}
+    r0=JSON.stringify(r);redraw();commit();toast(L('Row moved here','Rivi siirretty tähän'))};
   const itemsHtml=()=>{
     const it=r.items||[];
     if(!it.length)return `<div class="f"><span class="lab">Items</span><div class="actions"><button class="btn sm" data-act="itAdd">Add item</button></div></div>`;
     if(!itEdit)return `<div class="f"><div class="line-head" style="margin:0"><span class="lab">Items</span><button class="btn sm ur" data-act="itEditOn" aria-label="Modify items">${PEN_SVG}</button></div>
-      <div class="itfold">${it.map(x=>`<div class="line done${x.incl===false?' off':''}"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted">${fmtRate(+x.vatRate||0)} % VAT${x.incl===false?' · not counted as expense':''}</div></div><div class="mono dam">${money(x.total||0)}</div></div></div>`).join('')}</div>
+      <div class="itfold">${it.map(x=>`<div class="line done${x.incl===false?' off':''}"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted">${fmtRate(+x.vatRate||0)} % VAT${x.incl===false?' · not counted as expense':''}</div></div><div class="mono dam">${money(x.total||0)}</div></div></div>`).join('')}${othView()}</div>
       <div class="small" id="itsum" style="margin-top:6px">${esc(itSumText())}</div>${splitBtn()}
 </div>`;
     const sumAll=it.reduce((t,x)=>t+(x.total||0),0);
     const warn=Math.abs(sumAll-(r.total||0))>2?`<div class="notice">The items add up to ${money(sumAll)} but the receipt total is ${money(r.total)}. Check the rows.</div>`:'';
     return `<div class="f"><div class="line-head" style="margin:0"><span class="lab">Items · tick what counts as a business expense</span>${isNew||r.status==='review'?'':`<button class="btn sm ur okb" data-act="itEditOff" aria-label="Done editing items">${CHECK_SVG}</button>`}</div>${warn}
       <div class="actions" style="margin:2px 0 8px"><button class="btn sm" data-act="itAll">Select all</button><button class="btn sm" data-act="itNone">Select none</button></div>
-      <div class="itms">${it.map((x,i)=>`<div class="itm${x.incl===false?' off':''}"><input type="checkbox" class="ick" data-it="incl" data-i="${i}" aria-label="Include in expenses" ${x.incl===false?'':'checked'}><div class="ib"><input data-it="desc" data-i="${i}" value="${esc(x.desc)}" aria-label="Product" placeholder="Product"><div class="ir"><input data-it="total" data-i="${i}" inputmode="decimal" value="${esc(inputMoney(x.total))}" aria-label="Price including VAT (€)" placeholder="0,00"><select data-it="vatRate" data-i="${i}" aria-label="VAT rate">${VATS.map(v=>`<option value="${v}" ${+x.vatRate===v?'selected':''}>${fmtRate(v)} %</option>`).join('')}</select>${it.length>1?`<button class="btn sm trash" data-act="itDel" data-i="${i}" aria-label="Remove item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>`:''}</div></div></div>`).join('')}<button class="itm itadd" data-act="itAdd"><span class="plus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span>Add item</span></button></div>
+      <div class="itms">${it.map((x,i)=>`<div class="itm${x.incl===false?' off':''}"><input type="checkbox" class="ick" data-it="incl" data-i="${i}" aria-label="Include in expenses" ${x.incl===false?'':'checked'}><div class="ib"><input data-it="desc" data-i="${i}" value="${esc(x.desc)}" aria-label="Product" placeholder="Product"><div class="ir"><input data-it="total" data-i="${i}" inputmode="decimal" value="${esc(inputMoney(x.total))}" aria-label="Price including VAT (€)" placeholder="0,00"><select data-it="vatRate" data-i="${i}" aria-label="VAT rate">${VATS.map(v=>`<option value="${v}" ${+x.vatRate===v?'selected':''}>${fmtRate(v)} %</option>`).join('')}</select>${it.length>1?`<button class="btn sm trash" data-act="itDel" data-i="${i}" aria-label="Remove item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>`:''}</div></div></div>`).join('')}${othEdit()}<button class="itm itadd" data-act="itAdd"><span class="plus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span>Add item</span></button></div>
       <div class="small" id="itsum" style="margin-top:6px">${esc(itSumText())}</div>${splitBtn()}
 </div>`;
   };
@@ -2330,7 +2336,7 @@ function openReceipt(id,isNewObj){
       <div class="f"><label for="r_rate">VAT rate</label><select id="r_rate" data-r="vatRate">${VATS.map(v=>`<option value="${v}" ${+r.vatRate===v?'selected':''}>${fmtRate(v)} %</option>`).join('')}</select></div>
       <div class="f"><label for="r_vat">VAT amount (€)</label><input id="r_vat" data-r="vat" inputmode="decimal" value="${esc(inputMoney(r.vat))}" placeholder="0,00"></div>
     </div>
-    ${itemsHtml()}${otherRows()}
+    ${itemsHtml()}
     <div class="f cwrap"><label for="r_catbtn">Category</label><button type="button" class="selbtn" id="r_catbtn" data-act="ctOpen" aria-haspopup="listbox" aria-expanded="${ctOpen}"><span>${esc(CATS[ctKey()])}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div id="ctBox">${ctOpen?ctPanel():''}</div></div>
     ${isProj()?'':`<div class="f"><span class="lab">Expense type</span><div class="list"><label class="pick"><input type="radio" name="r_kind" value="own" data-r="kind" ${billMode?'':'checked'}><span>Own expense</span></label><label class="pick"><input type="radio" name="r_kind" value="bill" data-r="kind" ${billMode?'checked':''}><span>Billable to client</span></label></div></div>`}
     ${billMode||isProj()?`<div class="f cwrap"><label for="r_client">${cw('Client','Contractor (optional)')}</label><button type="button" class="selbtn" id="r_client" data-act="rcOpen" aria-haspopup="listbox" aria-expanded="${rcOpen}"><span class="${client(r.clientId)?'':'muted'}">${esc((client(r.clientId)||{}).name||'Choose…')}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div id="rcBox">${rcOpen?rcPanel():''}</div></div>`:''}
@@ -2380,6 +2386,7 @@ function openReceipt(id,isNewObj){
     const it=(r.items||[])[+t.dataset.i];if(!it)return;
     if(k==='desc')it.desc=t.value;else if(k==='total'){it.total=toCents(t.value);itRecalc()}
   });
+  root.addEventListener('change',e=>{const o=e.target.dataset&&e.target.dataset.oth;if(o){moveRow(o,+e.target.dataset.oi);return}});
   root.addEventListener('change',e=>{
     const t=e.target,k=t.dataset&&t.dataset.it;if(!k)return;
     const it=(r.items||[])[+t.dataset.i];if(!it)return;
@@ -2426,10 +2433,6 @@ function openReceipt(id,isNewObj){
     if(a.dataset.act==='recSplit'){if(!r.items||r.items.length<2)return;r.items=r.items.filter(x=>(x.desc||'').trim()||x.total);openSplit(r,()=>{closeSheet();go('receipts',true)})}
     if(a.dataset.act==='itEditOn'){itEdit=true;redraw()}
     if(a.dataset.act==='itEditOff'){itEdit=false;redraw()}
-    if(a.dataset.act==='rowHere'){(async()=>{const sb=S.receipts.find(x=>x.id===a.dataset.s);if(!sb||sb.billedInvoiceId)return;const s2=clone(sb),i=+a.dataset.i;if(!s2.items||!s2.items[i])return;const [x]=s2.items.splice(i,1);
-      r.items=r.items||[];r.items.push({...x,incl:true});itRecalc();
-      try{if(s2.items.length)await save('receipts',recSum(s2));else await drop('receipts',s2.id);await save('receipts',r)}catch(err){return}
-      r0=JSON.stringify(r);redraw();commit();toast(L('Row moved','Rivi siirretty'))})();return}
     if(a.dataset.act==='itAdd'){r.items=r.items||[];r.items.push({id:uid(),desc:'',total:0,vatRate:+r.vatRate||(+S.settings.defVat||25.5),incl:true});redraw();commit()}
     if(a.dataset.act==='itDel'){ask={t:'item',i:+a.dataset.i};redraw()}
     if(a.dataset.act==='itDelYes'){commit();const di=ask.i,[gone]=r.items.splice(di,1);ask=null;if(r.items.length)itRecalc();redraw();commit();
