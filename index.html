@@ -2276,7 +2276,7 @@ function openReceipt(id,isNewObj){
   const askNote=()=>{
     if(!ask)return '';
     const wrap=(inner)=>`<div class="modal-wrap"><div class="modal-bg" data-act="askNo"></div><div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="dlgT">${inner}</div></div>`;
-    if(ask.t==='item'){const x=(r.items||[])[ask.i]||{};return wrap(`<h3 id="dlgT">Remove this item?</h3><p>${esc((x.desc||'').trim()||'This row')}${x.total?' · '+money(x.total):''} will be removed and the receipt total recalculated. You can undo this with the undo button.</p><div class="actions"><button class="btn dlg-del" data-act="itDelYes">Remove item</button><button class="btn" data-act="askNo">Cancel</button></div>`)}
+    if(ask.t==='item'){const x=(r.items||[])[ask.i]||{};return wrap(`<h3 id="dlgT">Remove this item?</h3><p>${esc((x.desc||'').trim()||L('This row','Tämä rivi'))}${x.total?' · '+money(x.total):''} will be removed and the receipt total recalculated. You can undo this with the undo button.</p><div class="actions"><button class="btn dlg-del" data-act="itDelYes">Remove item</button><button class="btn" data-act="askNo">Cancel</button></div>`)}
     if(r.billedInvoiceId)return wrap(`<h3 id="dlgT">Can't delete this receipt</h3><p>It is billed on an invoice. Remove the invoice line first.</p><div class="actions"><button class="btn primary" data-act="askNo">OK</button></div>`);
     return wrap(`<h3 id="dlgT">Delete this receipt?</h3><p>The receipt and its saved ${r.isPdf?'PDF':'photo and PDF'} will be deleted.</p><div class="actions"><button class="btn dlg-del" data-act="recDelYes">Delete receipt</button><button class="btn" data-act="askNo">Cancel</button></div>`);
   };
@@ -2432,7 +2432,8 @@ function openReceipt(id,isNewObj){
       r0=JSON.stringify(r);redraw();commit();toast(L('Row moved','Rivi siirretty'))})();return}
     if(a.dataset.act==='itAdd'){r.items=r.items||[];r.items.push({id:uid(),desc:'',total:0,vatRate:+r.vatRate||(+S.settings.defVat||25.5),incl:true});redraw();commit()}
     if(a.dataset.act==='itDel'){ask={t:'item',i:+a.dataset.i};redraw()}
-    if(a.dataset.act==='itDelYes'){commit();r.items.splice(ask.i,1);ask=null;if(r.items.length)itRecalc();redraw();commit()}
+    if(a.dataset.act==='itDelYes'){commit();const di=ask.i,[gone]=r.items.splice(di,1);ask=null;if(r.items.length)itRecalc();redraw();commit();
+      offerAction(L('Item removed','Tuote poistettu'),L('Undo','Kumoa'),async()=>{if(!document.body.contains(root)||!gone)return;r.items.splice(Math.min(di,r.items.length),0,gone);itRecalc();redraw();commit()})}
     if(a.dataset.act==='itAll'||a.dataset.act==='itNone'){r.items.forEach(x=>{x.incl=a.dataset.act==='itAll'});redraw();commit()}
     if(a.dataset.act==='recPdf'){
       try{const b=await recPdfBlob(r);if(b)await saveFile(recFileName(r),b);else toast('File not found')}catch(err){toast('Could not create the PDF')}
