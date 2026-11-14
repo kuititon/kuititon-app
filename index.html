@@ -600,6 +600,21 @@ button.slide-vat{display:flex;width:100%;background:none;border-width:1px 0 0;bo
 .plcmp thead .on{border-radius:10px 10px 0 0}
 .plcmp tr:last-child td{border-bottom:0}
 .plcmp .no{color:var(--muted);font-weight:400}
+.wpill{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px;font-weight:600;border-radius:99px;padding:2px 8px;background:var(--accent-soft);color:var(--accent-text);margin-top:2px}
+.wpill svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.wpill.exp{background:color-mix(in srgb,var(--muted) 16%,var(--surface));color:var(--muted)}
+.wchk{display:flex;gap:12px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;min-height:52px;width:100%;text-align:left;appearance:none;font:inherit;color:inherit}
+.wchk[aria-checked=true]{border-color:var(--ink);background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.wchk .bx{flex:0 0 22px;height:22px;border-radius:7px;border:2px solid var(--muted);display:grid;place-items:center}
+.wchk[aria-checked=true] .bx{background:var(--ink);border-color:var(--ink)}
+.wchk .bx svg{width:14px;height:14px;fill:none;stroke:var(--bg);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.wchk[aria-checked=true] .bx svg{opacity:1}
+.wchk .tx{display:flex;flex-direction:column;gap:2px;font-size:16px}.wchk .tx small{font-size:13px;color:var(--muted)}
+.wchk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dwrap{position:relative}.dwrap input{display:block;width:100%;box-sizing:border-box;text-align:left;padding-right:46px;-webkit-appearance:none;appearance:none}
+.dwrap input::-webkit-date-and-time-value{text-align:left;margin:0}
+.dwrap input::-webkit-calendar-picker-indicator{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+.dwrap .cal{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--ink)}
 </style>
 
 <div class="wrap"><div id="acctbar"></div><div id="app"></div></div>
@@ -625,6 +640,8 @@ const pad=n=>String(n).padStart(2,'0');
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const todayStr=()=>iso(new Date());
 const addDays=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+(+n||0));return iso(d)};
+const addYearsISO=(iso,n)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');if(!m)return '';const y=+m[1]+n,mo=+m[2],last=new Date(y,mo,0).getDate();return y+'-'+m[2]+'-'+String(Math.min(+m[3],last)).padStart(2,'0')};
+const warrExpired=r=>!!(r.warrantyEnd&&r.warrantyEnd<todayStr());
 const dateFi=s=>{if(!s||!/^\d{4}-\d{2}-\d{2}$/.test(s))return '';const[p,q,r]=s.split('-');return r+'.'+q+'.'+p};
 const eur=new Intl.NumberFormat('fi-FI',{style:'currency',currency:'EUR'});
 const money=c=>eur.format((c||0)/100);
@@ -773,7 +790,7 @@ const FI={
 'File name':'Tiedoston nimi','Generated automatically from the date and supplier. Edit it if needed.':'Luotu automaattisesti päivämäärän ja toimittajan perusteella, voit muokata nimeä halutessasi.',
 'Notes':'Muistiinpanot','Confirm receipt':'Vahvista kuitti','This year':'Kuluva vuosi','No earlier data':'Ei aiempaa tietoa','Earlier years':'Aiemmat vuodet','So far':'tähän mennessä','vs previous year':'vs edellinen vuosi','Edit categories':'Muokkaa kategorioita','New category':'Uusi kategoria','Add category…':'Lisää kategoria…','Default categories':'Oletuskategoriat','HVAC & electrical':'LVI- ja sähkötyöt','Materials':'Tarvikkeet','Tools':'Työkalut','"Other" is always kept. Receipts in a removed category show as Other.':'"Muut" säilyy aina. Poistetun kategorian kuitit näkyvät kategoriassa Muut.',"Default categories can't be renamed. A category you add must have a name.":'Oletuskategorioita ei voi nimetä uudelleen. Lisäämälläsi kategorialla on oltava nimi.','Clear category filter':'Poista kategoriasuodatin','Saving receipt…':'Tallennetaan kuittia…','Save':'Tallenna',
 'Business ID looks wrong. It should be like 1234567-8':'Y-tunnus näyttää väärältä. Sen pitäisi olla muotoa 1234567-8','Enter the total':'Anna kokonaissumma','Enter the date':'Anna päivämäärä','Receipt saved':'Kuitti tallennettu',
-'Own expenses':'Omat kulut','Welcome':'Tervetuloa','Getting started takes just a few steps':'Alkuun pääset muutamalla askeleella','Choose your language':'Valitse kieli','Continue':'Jatka','Your profile':'Profiilisi','Tell us who you are. You\'ll use these details to sign in.':'Kerro, kuka olet. Näillä tiedoilla kirjaudut sisään.','Enter your full name':'Anna koko nimesi','Enter a valid email address':'Anna kelvollinen sähköpostiosoite','Business email':'Yrityksen sähköposti','Fill in your business details once and they are used on every invoice. You can change everything later in Settings.':'Täytä yrityksesi tiedot kerran, niin ne tulevat jokaiselle laskulle. Voit muuttaa kaiken myöhemmin Asetuksissa.','Save and start':'Tallenna ja aloita','Skip for now':'Ohita toistaiseksi','Units':'Yksiköt','Add unit':'Lisää yksikkö','Unit name':'Yksikön nimi','Make default':'Aseta oletukseksi','Units for invoice lines. The first unit is used for new lines. Drag the handle to change the order. Existing invoices keep their unit.':'Yksiköt laskuriveille. Ensimmäistä yksikköä käytetään uusilla riveillä. Voit muuttaa järjestystä vetämällä kahvasta. Aiemmat laskut säilyttävät yksikkönsä.','Units reset':'Yksiköt palautettu','Enter an invoice reference':'Anna laskun viite','Invoice reference (required)':'Laskun viite (pakollinen)','Account details are missing. Add them in settings before sending the invoice.':'Tilitiedot puuttuvat, lisää ne asetuksista ennen laskun lähettämistä.','missing in account settings. Add them before sending.':'puuttuu tilin asetuksista. Lisää ne ennen lähettämistä.','Fill in the missing account details first':'Täytä puuttuvat tilitiedot ensin','Admin':'Ylläpito','Developer':'Kehittäjä','Could not change status':'Tilan vaihto epäonnistui','Contact info':'Yhteystiedot','Mobile number':'Puhelinnumero','Show admin tools':'Näytä ylläpitotyökalut','Hide admin tools':'Piilota ylläpitotyökalut','Developer tools, visible only to admin users. In the wizard, email is optional for admins.':'Kehittäjätyökalut, näkyvät vain ylläpitäjille. Käyttöönotossa sähköposti on ylläpitäjälle vapaaehtoinen.','Run setup wizard again':'Suorita käyttöönotto uudelleen','Opens the setup wizard without deleting anything.':'Avaa käyttöönoton poistamatta mitään.','Clear all data':'Tyhjennä kaikki tiedot','Deletes every account with its clients, invoices, receipts and settings, and restarts the app.':'Poistaa kaikki tilit asiakkaineen, laskuineen, kuitteineen ja asetuksineen ja käynnistää sovelluksen uudelleen.','This permanently deletes all accounts with every client, invoice, receipt and setting. It cannot be undone.':'Tämä poistaa pysyvästi kaikki tilit asiakkaineen, laskuineen, kuitteineen ja asetuksineen. Toimintoa ei voi perua.','Type DELETE to confirm':'Vahvista kirjoittamalla DELETE','Fill in your business details once and they are used on every invoice.':'Täytä yrityksesi tiedot kerran, niin ne tulevat jokaiselle laskulle.','Business name (required)':'Yrityksen nimi (pakollinen)','You can edit your account details later in settings and add multiple accounts to your user.':'Voit muokata tilisi tietoja myöhemmin asetuksissa sekä lisätä useita tilejä käyttäjällesi.','Enter your business name':'Anna yrityksen nimi','Skip':'Ohita','Own expense':'Oma kulu','Custom…':'Mukautettu…','Start date':'Alkupäivä','End date':'Loppupäivä','Pick a start and end date':'Valitse alku- ja loppupäivä','Start date must be before end date':'Alkupäivän on oltava ennen loppupäivää','Open':'Avoimet',
+'Own expenses':'Omat kulut','Warranty ending':'Takuu päättymässä','Welcome':'Tervetuloa','Getting started takes just a few steps':'Alkuun pääset muutamalla askeleella','Choose your language':'Valitse kieli','Continue':'Jatka','Your profile':'Profiilisi','Tell us who you are. You\'ll use these details to sign in.':'Kerro, kuka olet. Näillä tiedoilla kirjaudut sisään.','Enter your full name':'Anna koko nimesi','Enter a valid email address':'Anna kelvollinen sähköpostiosoite','Business email':'Yrityksen sähköposti','Fill in your business details once and they are used on every invoice. You can change everything later in Settings.':'Täytä yrityksesi tiedot kerran, niin ne tulevat jokaiselle laskulle. Voit muuttaa kaiken myöhemmin Asetuksissa.','Save and start':'Tallenna ja aloita','Skip for now':'Ohita toistaiseksi','Units':'Yksiköt','Add unit':'Lisää yksikkö','Unit name':'Yksikön nimi','Make default':'Aseta oletukseksi','Units for invoice lines. The first unit is used for new lines. Drag the handle to change the order. Existing invoices keep their unit.':'Yksiköt laskuriveille. Ensimmäistä yksikköä käytetään uusilla riveillä. Voit muuttaa järjestystä vetämällä kahvasta. Aiemmat laskut säilyttävät yksikkönsä.','Units reset':'Yksiköt palautettu','Enter an invoice reference':'Anna laskun viite','Invoice reference (required)':'Laskun viite (pakollinen)','Account details are missing. Add them in settings before sending the invoice.':'Tilitiedot puuttuvat, lisää ne asetuksista ennen laskun lähettämistä.','missing in account settings. Add them before sending.':'puuttuu tilin asetuksista. Lisää ne ennen lähettämistä.','Fill in the missing account details first':'Täytä puuttuvat tilitiedot ensin','Admin':'Ylläpito','Developer':'Kehittäjä','Could not change status':'Tilan vaihto epäonnistui','Contact info':'Yhteystiedot','Mobile number':'Puhelinnumero','Show admin tools':'Näytä ylläpitotyökalut','Hide admin tools':'Piilota ylläpitotyökalut','Developer tools, visible only to admin users. In the wizard, email is optional for admins.':'Kehittäjätyökalut, näkyvät vain ylläpitäjille. Käyttöönotossa sähköposti on ylläpitäjälle vapaaehtoinen.','Run setup wizard again':'Suorita käyttöönotto uudelleen','Opens the setup wizard without deleting anything.':'Avaa käyttöönoton poistamatta mitään.','Clear all data':'Tyhjennä kaikki tiedot','Deletes every account with its clients, invoices, receipts and settings, and restarts the app.':'Poistaa kaikki tilit asiakkaineen, laskuineen, kuitteineen ja asetuksineen ja käynnistää sovelluksen uudelleen.','This permanently deletes all accounts with every client, invoice, receipt and setting. It cannot be undone.':'Tämä poistaa pysyvästi kaikki tilit asiakkaineen, laskuineen, kuitteineen ja asetuksineen. Toimintoa ei voi perua.','Type DELETE to confirm':'Vahvista kirjoittamalla DELETE','Fill in your business details once and they are used on every invoice.':'Täytä yrityksesi tiedot kerran, niin ne tulevat jokaiselle laskulle.','Business name (required)':'Yrityksen nimi (pakollinen)','You can edit your account details later in settings and add multiple accounts to your user.':'Voit muokata tilisi tietoja myöhemmin asetuksissa sekä lisätä useita tilejä käyttäjällesi.','Enter your business name':'Anna yrityksen nimi','Skip':'Ohita','Own expense':'Oma kulu','Custom…':'Mukautettu…','Start date':'Alkupäivä','End date':'Loppupäivä','Pick a start and end date':'Valitse alku- ja loppupäivä','Start date must be before end date':'Alkupäivän on oltava ennen loppupäivää','Open':'Avoimet',
 /* settings */
 'Your business':'Yrityksesi','Payment details':'Maksutiedot','Invoice defaults':'Laskun oletukset','Default VAT':'Oletus-ALV','Late interest (%)':'Viivästyskorko (%)','Logo':'Logo',
 'Replace logo':'Vaihda logo','Remove logo':'Poista logo','Upload logo (PNG or JPG)':'Lataa logo (PNG tai JPG)','Save settings':'Tallenna asetukset','Settings saved':'Asetukset tallennettu','Could not save settings':'Asetusten tallennus epäonnistui',
@@ -814,7 +831,7 @@ const FI_RX=[
  [/^Profit (.+)\. Sales (.+) against expenses (.+)$/,(m)=>'Tuotto '+m[1]+'. Myynti '+m[2]+', kulut '+m[3]],
  [/^([A-Z][a-z]+) (\d{4})$/,(m)=>FI_MON[m[1]]?FI_MON[m[1]]+' '+m[2]:undefined],
  [/^(.+?) (\d+)$/,(m)=>FI[m[1]]!==undefined?FI[m[1]]+' '+m[2]:undefined],
- [/^All (\d+)$/,(m)=>'Kaikki '+m[1]],[/^To check (\d+)$/,(m)=>'Tarkistettavat '+m[1]],[/^To bill (\d+)$/,(m)=>'Laskutetut '+m[1]],[/^Billed (\d+)$/,(m)=>'Laskutetut '+m[1]],[/^Own expenses (\d+)$/,(m)=>'Omat kulut '+m[1]],
+ [/^All (\d+)$/,(m)=>'Kaikki '+m[1]],[/^To check (\d+)$/,(m)=>'Tarkistettavat '+m[1]],[/^To bill (\d+)$/,(m)=>'Laskutetut '+m[1]],[/^Billed (\d+)$/,(m)=>'Laskutetut '+m[1]],[/^Own expenses (\d+)$/,(m)=>'Omat kulut '+m[1]],[/^Warranty receipts (\d+)$/,(m)=>'Takuukuitit '+m[1]],
  [/^VAT (\d+(?:,\d+)?) %$/,(m)=>'ALV '+m[1]+' %'],
  [/^(\d+(?:,\d+)?) % VAT(.*)$/,(m)=>m[1]+' % ALV'+m[2].replace('· from receipt','· kuitista').replace('· not counted as expense','· ei lasketa kuluksi').replace(/ \/ (pcs|day|lot)$/,(x,u)=>' / '+FI_UNIT[u])],
  [/^(.+) × (.+) € · (\d+(?:,\d+)?) % VAT(.*)$/,(m)=>m[1].replace(/ (pcs|day|lot)$/,(x,u)=>' '+FI_UNIT[u])+' × '+m[2]+' € · '+m[3]+' % ALV'+m[4].replace(' · from receipt',' · kuitista')],
@@ -1501,7 +1518,7 @@ const catIcon=id=>`<svg viewBox="0 0 24 24" aria-hidden="true">${CAT_IC[CATS[id]
 function recRow(r){
   const img=r.imageId?(r.isPdf?(PDFTH[r.imageId]?`<img class="thumb" alt="" src="${PDFTH[r.imageId]}">`:(setTimeout(fillPdfThumbs,60),`<div class="thumb" data-pdfth="${esc(r.imageId)}">PDF</div>`)):`<img class="thumb" alt="" loading="lazy" src="/_blob/${esc(r.imageId)}">`):`<div class="thumb" title="${esc(catName(r.category)||'Other')}">${catIcon(r.category)}</div>`;
   const c=client(r.clientId);
-  return `<button class="row" data-act="openRec" data-id="${r.id}">${img}<div class="l"><div class="t">${esc(r.supplier||'Unknown supplier')}</div><div class="s">${dateFi(r.date)} · ${esc(catName(r.category)||'Other')}${(r.items||[]).some(x=>x.incl===false)?' · '+r.items.filter(x=>x.incl===false).length+' excluded':''}</div>${c?`<div class="s" data-notr>${esc(c.name)}</div>`:''}</div><div class="r"><div class="mono">${money(recExp(r).gross)}</div>${r.status==='review'?pill('review').replace('>review<','>Check<'):(recBilled(r)?'<span class="pill sent">Billed</span>':recOpenBill(r)?`<span class="pill review" data-notr>${isFi()?'Avoin':'Open'}</span>`:'')}</div></button>`;
+  return `<button class="row" data-act="openRec" data-id="${r.id}">${img}<div class="l"><div class="t">${esc(r.supplier||'Unknown supplier')}</div><div class="s">${dateFi(r.date)} · ${esc(catName(r.category)||'Other')}${(r.items||[]).some(x=>x.incl===false)?' · '+r.items.filter(x=>x.incl===false).length+' excluded':''}</div>${c?`<div class="s" data-notr>${esc(c.name)}</div>`:''}${r.warranty&&r.warrantyEnd?`<div class="s"><span class="wpill${warrExpired(r)?' exp':''}" data-notr><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>${warrExpired(r)?L('Warranty expired','Takuu päättynyt'):L('Warranty ','Takuu ')+dateFi(r.warrantyEnd)}</span></div>`:''}</div><div class="r"><div class="mono">${money(recExp(r).gross)}</div>${r.status==='review'?pill('review').replace('>review<','>Check<'):(recBilled(r)?'<span class="pill sent">Billed</span>':recOpenBill(r)?`<span class="pill review" data-notr>${isFi()?'Avoin':'Open'}</span>`:'')}</div></button>`;
 }
 /* Inbox opens on "To check" only while something is waiting there; otherwise on "All" (unless the person picked it) */
 /* a receipt counts as billed once the invoice it is on has been sent (a draft invoice only reserves it) */
@@ -1509,8 +1526,9 @@ const recBilled=r=>{if(!r.billedInvoiceId)return false;const i=S.invoices.find(x
 const recOpenBill=r=>!isProj()&&r.status==='ok'&&!!r.clientId&&!recBilled(r);
 const isOpenRec=r=>r.status==='review'||recOpenBill(r);
 const recF=()=>(S.filter.rec==='open'&&!S.recPick&&!S.receipts.some(isOpenRec))?'all':S.filter.rec;
+const recSorts=f=>REC_SORTS.concat(f==='warranty'?[['warr','Warranty ending']]:[]);
 const REC_SORTS=[['new','Newest first'],['old','Oldest first'],['amt','Amount, high to low'],['amtlo','Amount, low to high'],['sup','Supplier A–Z'],['suprev','Supplier Z–A']];
-function recHay(r){const c=client(r.clientId);return NORM([r.supplier,r.supplierId,r.docNumber,r.notes,catName(r.category),c&&c.name,(r.items||[]).map(x=>x.desc).join(' '),dateFi(r.date),amtTxt(r.total),amtTxt(recExp(r).gross)].join(' | '))}
+function recHay(r){const c=client(r.clientId);return NORM([r.supplier,r.supplierId,r.docNumber,r.notes,catName(r.category),c&&c.name,(r.items||[]).map(x=>x.desc).join(' '),dateFi(r.date),amtTxt(r.total),amtTxt(recExp(r).gross),r.warranty?'warranty takuu':''].join(' | '))}
 function recList(){
   const f=recF(),q=NORM(S.q.rec).trim(),so=S.sort.rec;
   let list=S.receipts.slice();
@@ -1518,10 +1536,12 @@ function recList(){
   if(f==='review')list=list.filter(r=>r.status==='review');
   if(f==='billed'||f==='unbilled')list=list.filter(r=>r.status==='ok'&&recBilled(r));
   if(f==='own')list=list.filter(r=>!r.clientId&&r.status==='ok');
+  if(f==='warranty')list=list.filter(r=>r.status==='ok'&&r.warranty);
   if(S.recCat)list=list.filter(r=>r.status==='ok'&&(CATS[r.category]?r.category:'other')===S.recCat);
   if(q)list=list.filter(r=>q.split(/\s+/).every(w=>recHay(r).includes(w)));
   const d=r=>r.date||'',amt=r=>recExp(r).gross;
   list.sort(so==='old'?(a,b)=>d(a)<d(b)?-1:d(a)>d(b)?1:(a.createdAt||0)-(b.createdAt||0):so==='amt'?(a,b)=>amt(b)-amt(a):so==='amtlo'?(a,b)=>amt(a)-amt(b):so==='sup'?(a,b)=>String(a.supplier||'').localeCompare(String(b.supplier||''),'fi'):so==='suprev'?(a,b)=>String(b.supplier||'').localeCompare(String(a.supplier||''),'fi'):(a,b)=>d(b)<d(a)?-1:d(b)>d(a)?1:(b.createdAt||0)-(a.createdAt||0));
+  if(so==='warr'&&f==='warranty')list.sort((a,b)=>(warrExpired(a)?1:0)-(warrExpired(b)?1:0)||((a.warrantyEnd||'9')<(b.warrantyEnd||'9')?-1:1));
   const filtered=!!q;
   SEL.vis=list.map(r=>r.id);
   return list.length?`<div class="list">${list.map(r=>selOn('rec')?selRow(recRow(r),r.id):recRow(r)).join('')}</div>`:`<div class="empty"><strong>${filtered?'No matches':f==='open'?'Nothing to check':(S.receipts.length&&f!=='all')?'Nothing in this view':'No receipts yet'}</strong>${filtered?'Try a different search or filter.':f==='review'?'New scans land here until you confirm them.':(S.receipts.length&&f!=='all'&&f!=='open')?'Try another filter.':'Scan a receipt to start.'}</div>`;
@@ -1529,13 +1549,13 @@ function recList(){
 function viewReceipts(){
   const f=recF();
   const rv=toReview().length;
-  const chips=[['all','All '+S.receipts.length],['open','Open '+S.receipts.filter(isOpenRec).length],['billed','Billed '+S.receipts.filter(r=>r.status==='ok'&&recBilled(r)).length],['own','Own expenses '+S.receipts.filter(r=>!r.clientId&&r.status==='ok').length]].slice(0,isProj()?2:4);
+  const chips=[['all','All '+S.receipts.length],['open','Open '+S.receipts.filter(isOpenRec).length],['billed','Billed '+S.receipts.filter(r=>r.status==='ok'&&recBilled(r)).length],['own','Own expenses '+S.receipts.filter(r=>!r.clientId&&r.status==='ok').length]].slice(0,isProj()?2:4).concat([['warranty','Warranty receipts '+S.receipts.filter(r=>r.status==='ok'&&r.warranty).length]]);
   return loadingNote()+head('Receipts')+
   `<div class="actions" style="margin:0 0 12px"><button class="btn primary" data-act="cam"><svg class="plus-ic cam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9A2 2 0 015.5 7h2.2l1.1-1.7a1 1 0 01.8-.5h5.8a1 1 0 01.8.5L17.3 7h1.2a2 2 0 012 2v8.5a2 2 0 01-2 2h-13a2 2 0 01-2-2z"/><circle cx="12" cy="13.2" r="3.6"/></svg>Scan with camera</button><button class="btn half" data-act="imp"><svg class="plus-ic sm-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10.5M7.5 10.5l4.5 4.5 4.5-4.5M5 19.5h14"/></svg>Import</button><button class="btn half" data-act="newRec"><svg class="plus-ic sm-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New</button></div>
   ${S.ocr?'':'<p class="small muted" style="margin:-2px 0 12px">Automatic reading is not available here. Photos are saved and you enter the amounts.</p>'}
   <div id="queueBox"></div>
   <div class="chips">${chips.map(([k,l])=>`<button class="chip" data-act="recFilter" data-id="${k}" aria-pressed="${f===k}">${l}</button>`).join('')}${S.recCat?`<button class="chip" data-act="catClear" aria-pressed="true" aria-label="Clear category filter"><span>${esc(catName(S.recCat))}</span> ✕</button>`:''}</div>`+
-  toolsHtml('rec',REC_SORTS)+`<div id="listBox">${recList()}</div>`;
+  toolsHtml('rec',recSorts(f))+`<div id="listBox">${recList()}</div>`;
 }
 function renderQueue(){
   const b=$('#queueBox');if(!b)return;
@@ -2199,6 +2219,14 @@ function openReceipt(id,isNewObj){
   const rcPanel=()=>`<div class="cpanel"><div class="srch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="search" id="rq" data-rcq value="${esc(rcQ)}" placeholder="${cw('Search clients…','Search contractors…')}" aria-label="${cw('Search clients','Search contractors')}" autocomplete="off" enterkeyhint="search"></div><div id="rcList">${rcListHtml()}</div></div>`;
   const openRc=()=>{rcOpen=true;rcQ='';const bx=$('#rcBox',root);bx.innerHTML=rcPanel();const bt=$('#r_client',root);if(bt)bt.setAttribute('aria-expanded','true');const q=$('#rq',root);if(q)q.focus({preventScroll:true});const pn=bx.firstElementChild;if(pn)kbFit(bt,pn);if(pn)setTimeout(()=>pn.scrollIntoView({block:'nearest',behavior:'smooth'}),30)};
   const closeRc=()=>{if(!rcOpen)return;rcOpen=false;const bx=$('#rcBox',root),bt=$('#r_client',root);if(bt)bt.setAttribute('aria-expanded','false');const pn=bx&&bx.firstElementChild;if(!pn)return;pn.classList.add('closing');setTimeout(()=>{if(!rcOpen)bx.innerHTML=''},150)};
+  const SHD='<svg class="cal" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>';
+  const wHtml=()=>{
+    const on=!!r.warranty,yv=r.warrantyYrs||'2',cust=yv==='x';
+    return `<div class="f"><span class="lab">${L('Warranty','Takuu')}</span><button type="button" class="wchk" role="checkbox" aria-checked="${on}" data-act="wTog"><span class="bx"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="tx"><span>${L('This product has a warranty','Tuotteella on takuu')}</span><small>${L('You can find warranty receipts easily later','Löydät takuukuitit helposti myöhemmin')}</small></span></button></div>`+
+    (on?`<div class="f"><span class="lab">${L('Warranty period','Takuuaika')}</span><div class="chips" role="group" aria-label="${L('Warranty period','Takuuaika')}">${['1','2','3','5'].map(y=>`<button type="button" class="chip" data-act="wYrs" data-v="${y}" aria-pressed="${yv===y}">${y} ${L(y==='1'?'yr':'yrs','v')}</button>`).join('')}<button type="button" class="chip" data-act="wYrs" data-v="x" aria-pressed="${cust}">${L('Custom','Mukautettu')}</button></div></div>
+    <div class="f"><label for="r_wend">${L('Warranty ends','Takuu päättyy')}</label><div class="dwrap"><input type="date" id="r_wend" data-r="warrantyEnd" value="${esc(r.warrantyEnd||'')}" min="${esc(r.date||'')}">${cust?SHD:''}</div><span class="small muted">${cust?L('Set a custom end date.','Aseta mukautettu päättymispäivä.'):L('Calculated from the purchase date '+dateFi(r.date)+'. You can also edit the end date by hand.','Laskettu ostopäivästä '+dateFi(r.date)+'. Voit myös muokata päättymispäivää käsin.')}</span></div>`:'');
+  };
+  const refW=()=>{const b=$('#wBox',root);if(b)b.innerHTML=wHtml()};
   const body=()=>{
     const dup=dupOf(r);
     return `${askNote()}${r.imageId?(r.isPdf?pdfPvHtml(r):`<img class="preview" alt="Receipt photo" src="/_blob/${esc(r.imageId)}">`):''}
@@ -2221,6 +2249,7 @@ function openReceipt(id,isNewObj){
     <div class="f cwrap"><label for="r_catbtn">Category</label><button type="button" class="selbtn" id="r_catbtn" data-act="ctOpen" aria-haspopup="listbox" aria-expanded="${ctOpen}"><span>${esc(CATS[ctKey()])}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div id="ctBox">${ctOpen?ctPanel():''}</div></div>
     ${isProj()?'':`<div class="f"><span class="lab">Expense type</span><div class="list"><label class="pick"><input type="radio" name="r_kind" value="own" data-r="kind" ${billMode?'':'checked'}><span>Own expense</span></label><label class="pick"><input type="radio" name="r_kind" value="bill" data-r="kind" ${billMode?'checked':''}><span>Billable to client</span></label></div></div>`}
     ${billMode||isProj()?`<div class="f cwrap"><label for="r_client">${cw('Client','Contractor (optional)')}</label><button type="button" class="selbtn" id="r_client" data-act="rcOpen" aria-haspopup="listbox" aria-expanded="${rcOpen}"><span class="${client(r.clientId)?'':'muted'}">${esc((client(r.clientId)||{}).name||'Choose…')}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div id="rcBox">${rcOpen?rcPanel():''}</div></div>`:''}
+    <div id="wBox">${wHtml()}</div>
     <div class="f"><label for="r_fname">File name</label><input id="r_fname" class="mono" data-r="fileName" value="${esc(recFileName(r))}" autocomplete="off" autocapitalize="off" spellcheck="false" style="font-size:14px"><span class="small muted">Generated automatically from the date and supplier. Edit it if needed.</span></div>
     <div class="f"><label for="r_notes">Notes</label><textarea id="r_notes" data-r="notes">${esc(r.notes)}</textarea></div>
     <div class="actions"><button class="btn primary" data-act="recOk">${r.status==='review'?'Confirm receipt':'Save'}</button>
@@ -2238,6 +2267,8 @@ function openReceipt(id,isNewObj){
     if(k==='ctPick'){r.category=a.dataset.id;const sp=$('#r_catbtn span',root);if(sp)sp.textContent=CATS[ctKey()];const fn=$('#r_fname',root);if(fn&&!cleanName(r.fileName))fn.value=recFileName(r);closeCt();setTimeout(commit,0);return}
     if(k==='rcOpen'){if(ctOpen)closeCt();if(rcOpen)closeRc();else openRc();return}
     if(k==='rcPick'){r.clientId=(isProj()&&r.clientId===a.dataset.id)?'':a.dataset.id;const sp=$('#r_client span',root),c=client(r.clientId);if(sp&&c){sp.textContent=c.name;sp.className=''}else if(sp){sp.textContent=TT('Choose…');sp.className='muted'}closeRc();setTimeout(commit,0);return}
+    if(k==='wTog'){r.warranty=!r.warranty;if(r.warranty){if(!r.warrantyYrs)r.warrantyYrs='2';if(!r.warrantyEnd&&r.warrantyYrs!=='x')r.warrantyEnd=addYearsISO(r.date,+r.warrantyYrs)}refW();setTimeout(commit,0);return}
+    if(k==='wYrs'){r.warrantyYrs=a.dataset.v;if(r.warrantyYrs!=='x')r.warrantyEnd=addYearsISO(r.date,+r.warrantyYrs);refW();setTimeout(commit,0);return}
     if(k==='rcNew'){closeRc();openClient(null,cid=>{r.clientId=cid;rcOpen=false;redraw();setTimeout(commit,0)});return}
   });
   root.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.rcq!==undefined){rcQ=e.target.value;const l=$('#rcList',root);if(l)l.innerHTML=rcListHtml()}});
@@ -2285,7 +2316,8 @@ function openReceipt(id,isNewObj){
     else if(k==='clientId'){if(t.value==='__new'){t.value=r.clientId||'';openClient(null,cid=>{r.clientId=cid;sh.el.querySelector('.sheet-body').innerHTML=body()})}else r.clientId=t.value}
     else if(k==='fileName'){if(!cleanName(t.value)){r.fileName='';t.value=recFileName(r)}else{r.fileName=cleanName(t.value);t.value=r.fileName}}
     else if(k==='supplierId'){const f=fixYtunnus(t.value);if(f||!t.value.trim()){r.supplierId=f;t.value=f}else{r.supplierId=t.value.trim();toast('Business ID looks wrong. It should be like 1234567-8')}}
-    else if(['date','category'].includes(k)){r[k]=t.value;const fn=$('#r_fname',root);if(fn&&!cleanName(r.fileName))fn.value=recFileName(r)}
+    else if(k==='warrantyEnd'){if(t.value){r.warrantyEnd=t.value;r.warrantyYrs='x';refW()}}
+    else if(['date','category'].includes(k)){r[k]=t.value;const fn=$('#r_fname',root);if(fn&&!cleanName(r.fileName))fn.value=recFileName(r);if(k==='date'&&r.warranty&&r.warrantyYrs&&r.warrantyYrs!=='x'){r.warrantyEnd=addYearsISO(r.date,+r.warrantyYrs);refW()}}
   });
   root.addEventListener('click',async e=>{
     const a=e.target.closest('[data-act]');if(!a)return;
@@ -2293,6 +2325,8 @@ function openReceipt(id,isNewObj){
       if(!r.total){toast('Enter the total');return}
       if(billMode&&!isProj()&&!r.clientId){toast('Choose a client to bill');return}
       if(!r.date){toast('Enter the date');return}
+      if(r.warranty&&!r.warrantyEnd){toast(L('Enter the warranty end date','Anna takuun päättymispäivä'));return}
+      if(!r.warranty){delete r.warrantyEnd;delete r.warrantyYrs}
       r.fileName=cleanName(r.fileName);
       r.items=(r.items||[]).filter(x=>(x.desc||'').trim()||x.total);
       if(a.dataset.busy)return;a.dataset.busy='1';a.disabled=true;
