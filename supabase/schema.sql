@@ -44,7 +44,8 @@ create table public.profiles (
   scan_month     text        not null default to_char(now(), 'YYYY-MM'),
   scans_month    integer     not null default 0,
   scans_trial    integer     not null default 0,
-  created_at     timestamptz not null default now()
+  created_at     timestamptz not null default now(),
+  is_admin       boolean     not null default false
 );
 alter table public.profiles enable row level security;
 create policy "profiles: read own" on public.profiles for select to authenticated using (user_id = auth.uid());

@@ -486,7 +486,7 @@
     billing: billing,
     signOut: function () { return sb.auth.signOut(); },
     changePassword: changePassword,
-    user: function () { var u = (session && session.user) || {}; return { name: (u.user_metadata && u.user_metadata.full_name) || '', email: u.email || '' }; },
+    user: function () { var u = (session && session.user) || {}; return { name: (u.user_metadata && u.user_metadata.full_name) || '', email: u.email || '', admin: !!(profile && profile.is_admin) }; },
     sb: sb
   };
 
