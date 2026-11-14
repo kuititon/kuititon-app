@@ -3250,11 +3250,11 @@ let setupSh=null,setupShown=false,setupBackup=null,setupFresh=false;
 const setupNeeded=()=>S.loaded&&S.genLoaded&&S.acct==='main'&&!S.gen.setupDone&&!S.clients.length&&!S.invoices.length&&!S.receipts.length&&!S.settings.iban&&!S.settings.bizId;
 let setupStep=0,setupErr='';
 const setupTitles=['Welcome','Your profile','Choose your plan','Your account'];
-let setupMode='',setupSkip1=false;
+let setupMode='';
 const emailOk=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v||'').trim());
 function setupBody(){
   const s=S.settings,g=S.gen;
-  const stepsN=setupSkip1?[0,2,3]:[0,1,2,3],stepI=stepsN.indexOf(setupStep);
+  const stepsN=[0,2,3],stepI=stepsN.indexOf(setupStep);
   const dots=`<div class="sudots" aria-label="Step ${stepI+1} of ${stepsN.length}">${stepsN.map((n,k)=>`<i class="${k<=stepI?'on':''}"></i>`).join('')}</div>`;
   if(setupStep===0){
     const cur=isFi()?'fi':'en',names={en:'English',fi:'Suomi'};
@@ -3262,13 +3262,6 @@ function setupBody(){
     return `${dots}<div class="suhero"><div class="sulogo">${LOGO_SVG}</div><h1 class="sr"><span class="suwt">Welcome</span></h1><p>Getting started takes just a few steps</p></div>
     <div class="f sufit"><span class="lab">Choose your language</span><div class="sudd"><button type="button" class="sudd-btn" data-act="setupDd" aria-haspopup="listbox" aria-expanded="false" data-notr><span>${names[cur]}</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="sudd-list" role="listbox">${opt('en')}${opt('fi')}</div></div></div>
     <button class="btn primary sufit" data-act="setupNext" style="margin-top:12px">Continue</button>`;
-  }
-  if(setupStep===1){
-    return `${dots}<p class="small muted" style="margin:0 0 4px">Tell us who you are. You'll use these details to sign in.</p>
-    <div class="f"><label for="u_name">Full name</label><input id="u_name" data-p="fullName" data-pname autocapitalize="words" value="${esc(g.fullName||'')}" autocomplete="name" placeholder="First and last name"></div>
-    <div class="f"><label for="u_email">Email</label><input id="u_email" data-p="email" type="email" inputmode="email" value="${esc(g.email||'')}" autocomplete="email" placeholder="you@example.com"></div>
-    ${setupErr?`<p class="small" style="color:var(--bad,#a32d2d);margin:0">${setupErr}</p>`:''}
-    <button class="btn primary" data-act="setupNext" style="width:100%;margin-top:8px">Continue</button>`;
   }
   if(setupStep===2){
     const cur=g.profileType,sub=setupMode==='sub';
@@ -3309,13 +3302,7 @@ function setupRefresh(){
   sh.el.querySelector('.sheet-body').scrollTop=0;
 }
 function setupNext(){
-  if(setupStep===0){setupStep=setupSkip1?2:1;setupErr='';setupRefresh();return}
-  if(setupStep===1){
-    const g=S.gen;
-    if((g.fullName||'').trim().length<2){setupErr=TT2('Enter your full name');setupRefresh();return}
-    if(!adminOn()&&!emailOk(g.email)){setupErr=TT2('Enter a valid email address');setupRefresh();return}
-    g.fullName=g.fullName.trim();g.email=(g.email||'').trim();setupErr='';saveGen();setupStep=2;setupRefresh();return
-  }
+  if(setupStep===0){setupStep=2;setupErr='';setupRefresh();return}
   if(setupStep===2){
     if(!setupMode||(setupMode==='sub'&&!S.gen.profileType))return;
     if(setupMode==='trial'&&!S.gen.profileType)S.gen.profileType='account';
@@ -3330,12 +3317,11 @@ function openSetup(){
   if(S.settings.bizName===DEF.bizName)S.settings.bizName='';
   if(S.settings.web===DEF.web)S.settings.web='';
   setupStep=0;setupErr='';setupMode='';
-  setupSkip1=(S.gen.fullName||'').trim().length>=2&&(adminOn()||emailOk(S.gen.email));
   const sh=openSheet('Welcome',setupBody,{live:false});
   setupSh=sh;document.body.classList.add('in-setup');
   const b=sh.el.querySelector('.sheet-top .back');if(b)b.style.visibility='hidden';
   suFit(sh.el);
-  sh.guard=()=>{if(setupStep>0){setupStep=(setupStep===2&&setupSkip1)?0:setupStep-1;setupErr='';setupRefresh()}return true};
+  sh.guard=()=>{if(setupStep>0){setupStep=setupStep===2?0:setupStep-1;setupErr='';setupRefresh()}return true};
   sh.el.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
     if(k==='setupDd'){const d=a.closest('.sudd');const o=d.classList.toggle('open');a.setAttribute('aria-expanded',o);return}
     if(k==='setupLang'){const d=a.closest('.sudd');if(d)d.classList.remove('open');if(S.gen.ui===a.dataset.v){return}S.gen.ui=a.dataset.v;saveGen();fadeLang(()=>{applyLang();setupRefresh()});return}
