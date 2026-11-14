@@ -122,3 +122,8 @@ create policy "receipts: own folder, update" on storage.objects for update to au
   using (bucket_id = 'receipts' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "receipts: own folder, delete" on storage.objects for delete to authenticated
   using (bucket_id = 'receipts' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- The Edge Function (service_role) reads and updates profiles
+grant usage on schema public to service_role;
+grant all on public.profiles to service_role;
+grant all on public.docs to service_role;
