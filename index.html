@@ -1238,10 +1238,23 @@ function head(title,right,back){return (back?`<div class="top sub"><button class
 const bigCents=c=>{const neg=c<0,a=Math.abs(Math.round(c||0));return (neg?'-':'')+String(Math.floor(a/100)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+'<span class="dec">,'+pad(a%100)+'</span><span class="cur"> €</span>'};
 const projSpent=()=>{const by={};let tot=0;S.receipts.filter(r=>r.status==='ok').forEach(r=>{const k=CATS[r.category]?r.category:'other',v=recExp(r).gross;by[k]=(by[k]||0)+v;tot+=v});return {by,tot}};
 function viewHomeProj(){
-  const now=todayStr(),mode=S.homeRange==='month'?'month':'year';
-  const td=new Date(now+'T12:00:00'),from=mode==='year'?td.getFullYear()+'-01-01':now.slice(0,8)+'01';
+  const now=todayStr(),td=new Date(now+'T12:00:00');
+  const ymd=(y,m,d)=>y+'-'+pad(m)+'-'+pad(d),lastDay=(y,m)=>new Date(y,m,0).getDate();
+  const cy=td.getFullYear(),cmo=td.getMonth()+1,loc=S.gen.ui==='fi'?'fi-FI':'en-GB';
+  const monthName=(y,m)=>new Date(y,m-1,1,12).toLocaleString(loc,{month:'long'});
+  let per0=S.period||'ytd',mode='year',from,to,plabel;
+  const pm_=/^m:(\d{4})-(\d{2})$/.exec(per0),py_=/^y:(\d{4})$/.exec(per0);
+  if(pm_&&+pm_[1]*12+ +pm_[2]<=cy*12+cmo){const y=+pm_[1],m=+pm_[2];mode='month';from=ymd(y,m,1);to=(y===cy&&m===cmo)?now:ymd(y,m,lastDay(y,m));plabel=monthName(y,m)+' '+y}
+  else if(py_&&+py_[1]<cy){const y=+py_[1];from=ymd(y,1,1);to=ymd(y,12,31);plabel=String(y);per0='y:'+y}
+  else{per0='ytd';from=ymd(cy,1,1);to=now;plabel=String(cy)}
   const ok=S.receipts.filter(r=>r.status==='ok'),g=r=>recExp(r).gross;
-  const per=ok.filter(r=>r.date>=from&&r.date<=now);
+  const per=ok.filter(r=>r.date>=from&&r.date<=to);
+  const cost=(f,t)=>ok.filter(r=>r.date>=f&&r.date<=t).reduce((x,r)=>x+g(r),0);
+  const dts=ok.filter(r=>r.date).map(r=>r.date).sort();
+  const minY=Math.min(cy,...dts.map(d=>+d.slice(0,4))),firstD=dts.length&&dts[0]<now?dts[0]:now,firstM=+firstD.slice(5,7);
+  const prow=(id,name,amt)=>`<button type="button" class="vr prow" role="option" data-act="period" data-id="${id}" aria-selected="${id===per0}"><span><span class="cap" data-notr>${name}</span></span><span class="pa2" data-notr>${money(amt)}</span></button>`;
+  const my=pm_&&mode==='month'?+pm_[1]:cy;
+  const pmenu=S.periodOpen?`<div class="vatdet pmenu" role="listbox">${mode==='month'?`<div>${Array.from({length:Math.max(1,(my===cy?cmo:12)-(my<=minY?Math.min(firstM,my===cy?cmo:12):1)+1)},(_,k)=>(my===cy?cmo:12)-k).map(m=>prow('m:'+my+'-'+pad(m),monthName(my,m),cost(ymd(my,m,1),my===cy&&m===cmo?now:ymd(my,m,lastDay(my,m))))).join('')}</div>${my<=minY?'<div class="pnone">No earlier data</div>':''}`:`<div>${prow('ytd',cy,cost(ymd(cy,1,1),now))}</div>${minY<cy?`<div><div class="vh">Earlier years</div>${Array.from({length:cy-minY},(_,k)=>cy-1-k).map(y=>prow('y:'+y,y,cost(ymd(y,1,1),ymd(y,12,31)))).join('')}</div>`:''}<div class="pnone">No earlier data</div>`}</div>`:'';
   const tot=per.reduce((t,r)=>t+g(r),0),all=ok.reduce((t,r)=>t+g(r),0);
   const by={};per.forEach(r=>{const k=CATS[r.category]?r.category:'other';by[k]=(by[k]||0)+g(r)});
   const ks=Object.keys(by).sort((a,b)=>by[b]-by[a]);
@@ -1251,8 +1264,10 @@ function viewHomeProj(){
   let acc=0;
   const donut=tot>0?`<svg class="donut" viewBox="0 0 42 42" role="img" aria-label="${esc(ks.map(k=>CATS[k]+' '+Math.round(share(k))+' %').join(', '))}"><circle cx="21" cy="21" r="15.915" fill="none" stroke="rgba(244,246,239,.12)" stroke-width="6"/>${ks.map((k,i)=>{const p=share(k),gap=ks.length>1&&p>1.5?0.8:0,seg=`<circle cx="21" cy="21" r="15.915" fill="none" stroke="${col(i)}" stroke-width="6" stroke-dasharray="${Math.max(0.01,p-gap).toFixed(2)} ${(100-Math.max(0.01,p-gap)).toFixed(2)}" stroke-dashoffset="${(25-acc).toFixed(2)}"/>`;acc+=p;return seg}).join('')}</svg>`:'';
   const hero=`<section class="bal" aria-label="Project costs">
-    <div class="bal-top"><span class="bal-lab"><b style="font-weight:700;color:#fff">Project costs</b> <span data-notr style="font-weight:400">${mode==='year'?td.getFullYear():td.toLocaleString(S.gen.ui==='fi'?'fi-FI':'en-GB',{month:'long'})}</span></span>
-      <div class="seg" role="group" aria-label="Period" data-act="rangeSeg"><span class="seg-pill" aria-hidden="true"></span><button data-id="year" aria-pressed="${mode==='year'}">Year</button><button data-id="month" aria-pressed="${mode==='month'}">Month</button></div></div>
+    <div class="bal-top"><span class="bal-lab"><b style="font-weight:700;color:#fff">Project costs</b> </span>
+      <div class="seg" role="group" aria-label="Period" data-act="pSeg"><span class="seg-pill" aria-hidden="true"></span><button data-id="year" aria-pressed="${mode==='year'}">Year</button><button data-id="month" aria-pressed="${mode==='month'}">Month</button></div></div>
+    <div class="pwrap"><button type="button" class="slide-vat pbtn" data-act="periodOpen" aria-haspopup="listbox" aria-expanded="${!!S.periodOpen}" aria-label="Choose period"><span class="l">Period</span><span class="v cap" data-notr>${plabel}</span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></button>
+    ${pmenu}</div>
     <div class="bal-num">${cents(tot)}</div>
     <div class="bal-cmp"><span>Whole project</span><b>${money(all)}</b></div>
   <div class="slide" role="group" aria-label="Costs by category">
