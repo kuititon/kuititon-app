@@ -1091,6 +1091,7 @@ function enterNone(){
 function switchAccount(id,temp){
   if(!id){enterNone();try{localStorage.setItem('innotate-books-acct','')}catch(e){}renderAcctBar();render();window.scrollTo(0,0);return}
   S.acct=id;if(!temp){try{localStorage.setItem('innotate-books-acct',id)}catch(e){}}
+  S.period='ytd';S.periodOpen=false;S.lastM=S.lastY=null;try{localStorage.removeItem('innotate-period')}catch(e){}
   S.queue=[];S.filter={inv:'all',rec:'open',cli:'all'};S.q={inv:'',rec:'',cli:''};S.sort={inv:'new',rec:'new',cli:'az'};
   if(H.db){subscribeAccount()}else{loadLocal();S.loaded=true}
   renderAcctBar();render();window.scrollTo(0,0);
