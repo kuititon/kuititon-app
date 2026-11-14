@@ -2266,7 +2266,7 @@ function openReceipt(id,isNewObj){
   const moveRow=async(sid,i)=>{const sb=S.receipts.find(x=>x.id===sid);if(!sb||sb.billedInvoiceId||r.billedInvoiceId)return;const s2=clone(sb);if(!s2.items||!s2.items[i])return;const [x]=s2.items.splice(i,1);
     r.items=r.items||[];r.items.push({...x,incl:true});itRecalc();
     try{if(s2.items.length)await save('receipts',recSum(s2));else await drop('receipts',s2.id);await save('receipts',r)}catch(err){return}
-    r0=JSON.stringify(r);redraw();commit();toast(L('Row moved here','Rivi siirretty tähän'))};
+    r0=JSON.stringify(r);redraw();commit();if(x.incl!==false)toast(L('Row moved to this receipt','Rivi siirretty kuitille'))};
   const itemsHtml=()=>{
     const it=r.items||[];
     if(!it.length)return `<div class="f"><span class="lab">Items</span><div class="actions"><button class="btn sm" data-act="itAdd">Add item</button></div></div>`;
