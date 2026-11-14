@@ -171,6 +171,22 @@ h2{font:600 13px/1.2 var(--body);margin:26px 0 8px;letter-spacing:.08em;text-tra
 .sutype .tp{display:block;font-size:13px;font-weight:600;margin-top:8px;line-height:1.3}
 .sutype .tc{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center}
 .sutype .tc svg{width:14px;height:14px;fill:none;stroke:var(--accent-ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.row.grp .r{align-self:flex-start}.row.grp .gchev{position:absolute;right:14px;bottom:12px}
+.gchev{width:20px;height:20px;fill:none;stroke:var(--muted);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}.gchev.up{transform:rotate(180deg)}
+.row.kid{background-color:color-mix(in srgb,var(--bg) 55%,var(--surface));padding-left:36px;background-image:linear-gradient(var(--line),var(--line));background-repeat:no-repeat;background-size:2px 50%;background-position:26px 100%}
+.row.kid.lastk{background-image:none}
+.row.kid::before{content:"";position:absolute;left:26px;top:0;bottom:50%;width:24px;border-left:2px solid var(--line);border-bottom:2px solid var(--line);border-radius:0 0 0 8px;pointer-events:none}
+.row.kid .thumb{width:34px;height:34px;border-radius:10px}.row.kid .thumb svg{width:18px;height:18px}
+.row.selrow.mix .ck{background:var(--accent);border-color:var(--accent);opacity:1}.row.selrow.mix .ck svg{display:none}.row.selrow.mix .ck::after{content:"";width:10px;height:3px;background:#0e2219;border-radius:2px}
+.splpill{display:inline-flex;align-items:center;white-space:nowrap;font-size:12px;font-weight:600;border-radius:99px;padding:2px 8px;background:color-mix(in srgb,#3a78c2 16%,var(--surface));color:#245080;margin-top:2px}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .splpill{color:#9ec4f0}}
+:root[data-theme=dark] .splpill{color:#9ec4f0}
+.splnote{display:flex;flex-direction:column;gap:8px;align-items:flex-start;border-radius:14px;padding:11px 14px;background:var(--accent-soft);color:var(--accent-text);font-size:14px;margin:10px 0}
+.splsum{background:var(--surface);border-radius:16px;padding:12px 14px;display:grid;gap:8px;margin-top:12px}
+.splsum>div{display:flex;justify-content:space-between;gap:10px}
+.splsum .tot{border-top:1px solid var(--line);padding-top:8px;font-weight:700}
+.splsum .d{display:flex;align-items:center;gap:8px}
+.splsum .dot{width:10px;height:10px;border-radius:50%;background:var(--accent-text)}.splsum .dot.t{background:#3a78c2}
 .pp-wrap{position:fixed;inset:0;z-index:70}
 .pp-bg{position:absolute;inset:0;background:rgba(10,18,14,.55);animation:ppf .2s ease}
 .pp{position:absolute;left:0;right:0;bottom:0;max-width:720px;margin:0 auto;max-height:92dvh;display:flex;flex-direction:column;background:var(--bg);border-radius:24px 24px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);animation:pps .3s cubic-bezier(.2,.9,.3,1);transition:transform .2s}
@@ -658,7 +674,21 @@ const pad=n=>String(n).padStart(2,'0');
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const todayStr=()=>iso(new Date());
 const addDays=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+(+n||0));return iso(d)};
-const addYearsISO=(iso,n)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');if(!m)return '';const y=+m[1]+n,mo=+m[2],last=new Date(y,mo,0).getDate();return y+'-'+m[2]+'-'+String(Math.min(+m[3],last)).padStart(2,'0')};
+const splitInfo=r=>{if(!r.splitId)return null;const g=S.receipts.filter(x=>x.splitId===r.splitId).sort((a,b)=>(a.splitIdx||1)-(b.splitIdx||1)||(a.createdAt||0)-(b.createdAt||0));return g.length<2?null:{k:g.findIndex(x=>x.id===r.id)+1,n:g.length,g}};
+
+/* totals of a record follow its rows; rows left out of expenses still count towards the receipt total */
+const recSum=rec=>{const it=rec.items||[];rec.total=it.reduce((t,x)=>t+(x.total||0),0);rec.vat=it.reduce((t,x)=>t+vatFrom(x.total||0,+x.vatRate||0),0);const m=it.slice().sort((a,b)=>(b.total||0)-(a.total||0))[0];if(m)rec.vatRate=+m.vatRate||0;return rec};
+/* when split parts are deleted their rows go back to a remaining part, as rows that do not count, so nothing is lost */
+function rowsBack(gone){
+  const ids=new Set(gone.map(x=>x.id)),out=new Map();
+  for(const g of gone){if(!g.splitId)continue;
+    const rem=S.receipts.filter(x=>x.splitId===g.splitId&&!ids.has(x.id)).sort((a,b)=>(a.splitIdx||1)-(b.splitIdx||1));
+    if(!rem.length)continue;
+    const tid=rem[0].id,t=out.get(tid)||{before:clone(rem[0]),after:clone(rem[0])};
+    t.after.items=(t.after.items||[]).concat((g.items||[]).map(x=>({...clone(x),id:uid(),incl:false})));
+    out.set(tid,t)}
+  return [...out.values()].map(t=>({before:t.before,after:recSum(t.after)}));
+}const addYearsISO=(iso,n)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');if(!m)return '';const y=+m[1]+n,mo=+m[2],last=new Date(y,mo,0).getDate();return y+'-'+m[2]+'-'+String(Math.min(+m[3],last)).padStart(2,'0')};
 const warrExpired=r=>!!(r.warrantyEnd&&r.warrantyEnd<todayStr());
 const dateFi=s=>{if(!s||!/^\d{4}-\d{2}-\d{2}$/.test(s))return '';const[p,q,r]=s.split('-');return r+'.'+q+'.'+p};
 const eur=new Intl.NumberFormat('fi-FI',{style:'currency',currency:'EUR'});
@@ -1226,7 +1256,7 @@ function offerAction(msg,label,run,commit,ms){
 }
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-toastact]');if(!b)return;e.stopPropagation();const a=ACTN;if(!a)return;ACTN=null;clearTimeout(a.t);$('#toast').hidden=true;Promise.resolve(a.run()).catch(()=>{})},true);
 window.addEventListener('pagehide',()=>commitAction());
-const dropAssets=ids=>{if(H.assets)ids.filter((y,i,ar)=>y&&ar.indexOf(y)===i).forEach(id=>H.assets.delete(id).catch(()=>{}))};
+const dropAssets=ids=>{if(H.assets)ids.filter((y,i,ar)=>y&&ar.indexOf(y)===i&&!S.receipts.some(x=>x.imageId===y||x.pdfId===y)).forEach(id=>H.assets.delete(id).catch(()=>{}))};
 
 /* ---------- domain ---------- */
 function calc(lines){
@@ -1513,7 +1543,7 @@ const SELECT_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3
 const SEL={k:'',ids:new Set(),vis:[]};
 const noneFor=k=>!(k==='inv'?S.invoices:k==='rec'?S.receipts:S.clients).length;
 const selOn=k=>SEL.k===k&&!noneFor(k);
-function selRow(h,id){const on=SEL.ids.has(id);return h.replace(/data-act="open(Inv|Rec)"/,'data-act="mSel"').replace('class="row"','class="row selrow'+(on?' on':'')+'" aria-pressed="'+on+'"').replace(/^(<button[^>]*>)/,'$1<span class="ck">'+CHECK_SVG2+'</span>')}
+function selRow(h,id){const on=SEL.ids.has(id);return h.replace(/data-act="open(Inv|Rec)"/,'data-act="mSel"').replace(/class="row((?: [a-z]+)*)"/,(m,x)=>'class="row'+x+' selrow'+(on?' on':'')+'" aria-pressed="'+on+'"').replace(/^(<button[^>]*>)/,'$1<span class="ck">'+CHECK_SVG2+'</span>')}
 const selBarHtml=k=>selOn(k)?`<div class="selbar"><button class="btn sm" data-act="mSelExit" aria-label="Cancel selection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="selcnt">${SEL.ids.size} ${L('selected','valittu')}</span><button class="btn sm" data-act="mSelAll">${SEL.vis.length&&SEL.vis.every(x=>SEL.ids.has(x))?'None':'All'}</button><button class="btn sm" data-act="mSelDl" ${SEL.ids.size?'':'disabled'} aria-label="Download selected">${SHARE_IC}</button><button class="btn sm trash" data-act="mSelDel" ${SEL.ids.size?'':'disabled'} aria-label="Delete selected"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`:'';
 function mRefresh(){const k=SEL.k||(S.tab==='invoices'?'inv':'rec');const b=$('#listBox');if(b)b.innerHTML=listFor(k);const sb=$('#selBar');if(sb)sb.innerHTML=selBarHtml(k);const bt=document.querySelector('[data-act=mSelMode]');if(bt)bt.setAttribute('aria-pressed',String(!!SEL.k))}
 const listFor=k=>k==='rec'?recList():k==='cli'?cliList():invList();
@@ -1533,10 +1563,11 @@ const invRow=i=>{const st=status(i);return `<button class="row" data-act="openIn
 
 const CAT_IC={materials:'<path d="M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8"/>',tools:'<path d="M2 6h12a3 3 0 013 3v3H8l-1 8H4l1-8H2zM17 10.5h5"/>',software:'<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',fees:'<path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/>',vehicle:'<path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11M3 11h18v6H3zM7 14h.01M17 14h.01M5 17v2M19 17v2"/>',travel:'<path d="M12 3a1.5 1.5 0 011.5 1.5V10l8 5v2l-8-2.5V19l2 1.5V22l-3.5-1L8.5 22v-1.5l2-1.5v-4.5l-8 2.5v-2l8-5V4.5A1.5 1.5 0 0112 3z"/>',subcontract:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.5 2.5-6 6-6s6 2.5 6 6M17 8v6M14 11h6"/>',office:'<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2 19h20"/>',hvac:'<path d="M6 4h6M9 4v4M4 8h10a4 4 0 014 4v2h-3v-2a1 1 0 00-1-1H4zM16.5 17c-1 1.5-1.5 2.2-1.5 3a1.5 1.5 0 003 0c0-.8-.5-1.5-1.5-3z"/>',electrical:'<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',other:'<path d="M3 12V4h8l10 10-8 8zM7.5 8.5h.01"/>'};
 const catIcon=id=>`<svg viewBox="0 0 24 24" aria-hidden="true">${CAT_IC[CATS[id]?id:'other']||CAT_IC.other}</svg>`;
+const recImg=r=>r.imageId?(r.isPdf?(PDFTH[r.imageId]?`<img class="thumb" alt="" src="${PDFTH[r.imageId]}">`:(setTimeout(fillPdfThumbs,60),`<div class="thumb" data-pdfth="${esc(r.imageId)}">PDF</div>`)):`<img class="thumb" alt="" loading="lazy" src="/_blob/${esc(r.imageId)}">`):`<div class="thumb" title="${esc(catName(r.category)||'Other')}">${catIcon(r.category)}</div>`;
 function recRow(r){
-  const img=r.imageId?(r.isPdf?(PDFTH[r.imageId]?`<img class="thumb" alt="" src="${PDFTH[r.imageId]}">`:(setTimeout(fillPdfThumbs,60),`<div class="thumb" data-pdfth="${esc(r.imageId)}">PDF</div>`)):`<img class="thumb" alt="" loading="lazy" src="/_blob/${esc(r.imageId)}">`):`<div class="thumb" title="${esc(catName(r.category)||'Other')}">${catIcon(r.category)}</div>`;
+  const img=recImg(r);
   const c=client(r.clientId);
-  return `<button class="row" data-act="openRec" data-id="${r.id}">${img}<div class="l"><div class="t">${esc(r.supplier||'Unknown supplier')}</div><div class="s">${dateFi(r.date)} · ${esc(catName(r.category)||'Other')}${(r.items||[]).some(x=>x.incl===false)?' · '+r.items.filter(x=>x.incl===false).length+' excluded':''}</div>${c?`<div class="s" data-notr>${esc(c.name)}</div>`:''}${r.warranty&&r.warrantyEnd?`<div class="s"><span class="wpill${warrExpired(r)?' exp':''}" data-notr><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>${warrExpired(r)?L('Warranty expired','Takuu päättynyt'):L('Warranty ','Takuu ')+dateFi(r.warrantyEnd)}</span></div>`:''}</div><div class="r"><div class="mono">${money(recExp(r).gross)}</div>${r.status==='review'?pill('review').replace('>review<','>Check<'):(recBilled(r)?'<span class="pill sent">Billed</span>':recOpenBill(r)?`<span class="pill review" data-notr>${isFi()?'Avoin':'Open'}</span>`:'')}</div></button>`;
+  return `<button class="row" data-act="openRec" data-id="${r.id}">${img}<div class="l"><div class="t">${esc(r.supplier||'Unknown supplier')}</div><div class="s">${dateFi(r.date)} · ${esc(catName(r.category)||'Other')}${(r.items||[]).some(x=>x.incl===false)?' · '+r.items.filter(x=>x.incl===false).length+' excluded':''}</div>${c?`<div class="s" data-notr>${esc(c.name)}</div>`:''}${(()=>{const sp=splitInfo(r);return sp?`<div class="s"><span class="splpill" data-notr>${L('Part ','Osa ')}${sp.k}/${sp.n}</span></div>`:''})()}${r.warranty&&r.warrantyEnd?`<div class="s"><span class="wpill"${warrExpired(r)?' exp':''}" data-notr><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>${warrExpired(r)?L('Warranty expired','Takuu päättynyt'):L('Warranty ','Takuu ')+dateFi(r.warrantyEnd)}</span></div>`:''}</div><div class="r"><div class="mono">${money(recExp(r).gross)}</div>${r.status==='review'?pill('review').replace('>review<','>Check<'):(recBilled(r)?'<span class="pill sent">Billed</span>':recOpenBill(r)?`<span class="pill review" data-notr>${isFi()?'Avoin':'Open'}</span>`:'')}</div></button>`;
 }
 /* Inbox opens on "To check" only while something is waiting there; otherwise on "All" (unless the person picked it) */
 /* a receipt counts as billed once the invoice it is on has been sent (a draft invoice only reserves it) */
@@ -1547,6 +1578,23 @@ const recF=()=>(S.filter.rec==='open'&&!S.recPick&&!S.receipts.some(isOpenRec))?
 const recSorts=f=>REC_SORTS.concat(f==='warranty'?[['warr','Warranty ending']]:[]);
 const REC_SORTS=[['new','Newest first'],['old','Oldest first'],['amt','Amount, high to low'],['amtlo','Amount, low to high'],['sup','Supplier A–Z'],['suprev','Supplier Z–A']];
 function recHay(r){const c=client(r.clientId);return NORM([r.supplier,r.supplierId,r.docNumber,r.notes,catName(r.category),c&&c.name,(r.items||[]).map(x=>x.desc).join(' '),dateFi(r.date),amtTxt(r.total),amtTxt(recExp(r).gross),r.warranty?'warranty takuu':''].join(' | '))}
+
+/* split receipts: one row per purchase, the parts open underneath (and stay open until closed) */
+const RECOPEN=new Set();
+const recStat=r=>r.status==='review'?pill('review').replace('>review<','>Check<'):(recBilled(r)?'<span class="pill sent">Billed</span>':recOpenBill(r)?`<span class="pill review" data-notr>${isFi()?'Avoin':'Open'}</span>`:'');
+function recGroup(g,sid,selM){
+  const f=g[0],c=client(f.clientId),open=selM||RECOPEN.has(sid),n=g.length;
+  const cats=[...new Set(g.map(x=>CATS[x.category]?x.category:'other'))];
+  const catTxt=cats.length>1?L('Multiple categories','Useita kategorioita'):esc(catName(cats[0])||'Other');
+  const nb=g.filter(recBilled).length;
+  const st=g.some(x=>x.status==='review')?pill('review').replace('>review<','>Check<'):nb===n?'<span class="pill sent">Billed</span>':nb?`<span class="pill review" data-notr>${L('Partly billed','Osittain laskutettu')}</span>`:g.some(recOpenBill)?`<span class="pill review" data-notr>${isFi()?'Avoin':'Open'}</span>`:'';
+  const total=g.reduce((t,x)=>t+recExp(x).gross,0);
+  const k=g.filter(x=>SEL.ids.has(x.id)).length,ck=k===n?' on':k?' mix':'';
+  const chev=`<svg class="gchev${open?' up':''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+  const head=`<button class="row grp${selM?' selrow'+ck:''}" data-act="${selM?'mSelGrp':'recGrp'}" data-id="${esc(sid)}"${selM?` aria-pressed="${k===n}"`:` aria-expanded="${open}"`}>${selM?'<span class="ck">'+CHECK_SVG2+'</span>':''}${recImg(f)}<div class="l"><div class="t">${esc(f.supplier||'Unknown supplier')}</div><div class="s">${dateFi(f.date)} · ${catTxt}</div>${c?`<div class="s" data-notr>${esc(c.name)}</div>`:''}<div class="s"><span class="splpill" data-notr>${L('Split into '+n,'Jaettu '+n+' osaan')}</span> ${st}</div></div><div class="r"><div class="mono">${money(total)}</div>${selM?'':chev}</div></button>`;
+  if(!open)return head;
+  return head+g.map((x,i)=>{const h=`<button class="row kid${i===n-1?' lastk':''}" data-act="openRec" data-id="${x.id}"><div class="thumb" title="${esc(catName(x.category)||'Other')}">${catIcon(x.category)}</div><div class="l"><div class="t">${esc(catName(x.category)||'Other')}</div><div class="s"><span class="splpill" data-notr>${L('Part ','Osa ')}${i+1}/${n}</span></div></div><div class="r"><div class="mono">${money(recExp(x).gross)}</div>${recStat(x)}</div></button>`;return selM?selRow(h,x.id):h}).join('');
+}
 function recList(){
   const f=recF(),q=NORM(S.q.rec).trim(),so=S.sort.rec;
   let list=S.receipts.slice();
@@ -1562,7 +1610,11 @@ function recList(){
   if(so==='warr'&&f==='warranty')list.sort((a,b)=>(warrExpired(a)?1:0)-(warrExpired(b)?1:0)||((a.warrantyEnd||'9')<(b.warrantyEnd||'9')?-1:1));
   const filtered=!!q;
   SEL.vis=list.map(r=>r.id);
-  return list.length?`<div class="list">${list.map(r=>selOn('rec')?selRow(recRow(r),r.id):recRow(r)).join('')}</div>`:`<div class="empty"><strong>${filtered?'No matches':f==='open'?'Nothing to check':(S.receipts.length&&f!=='all')?'Nothing in this view':'No receipts yet'}</strong>${filtered?'Try a different search or filter.':f==='review'?'New scans land here until you confirm them.':(S.receipts.length&&f!=='all'&&f!=='open')?'Try another filter.':'Scan a receipt to start.'}</div>`;
+  const inL=new Set(list.map(r=>r.id)),seenG=new Set(),selM=selOn('rec');
+  const rows=list.map(r=>{const sp=splitInfo(r);
+    if(!sp||!sp.g.every(x=>inL.has(x.id)))return selM?selRow(recRow(r),r.id):recRow(r);
+    if(seenG.has(r.splitId))return '';seenG.add(r.splitId);return recGroup(sp.g,r.splitId,selM)}).join('');
+  return list.length?`<div class="list">${rows}</div>`:`<div class="empty"><strong>${filtered?'No matches':f==='open'?'Nothing to check':(S.receipts.length&&f!=='all')?'Nothing in this view':'No receipts yet'}</strong>${filtered?'Try a different search or filter.':f==='review'?'New scans land here until you confirm them.':(S.receipts.length&&f!=='all'&&f!=='open')?'Try another filter.':'Scan a receipt to start.'}</div>`;
 }
 function viewReceipts(){
   const f=recF();
@@ -2196,30 +2248,44 @@ function openReceipt(id,isNewObj){
   if(!base)return;
   const r=clone(base);
   if(!r.items||!r.items.length)r.items=[{id:uid(),desc:'',total:r.total||0,vatRate:+r.vatRate||(+S.settings.defVat||25.5),incl:true}];
-  const r0=JSON.stringify(r);
+  let r0=JSON.stringify(r);
   const isNew=!!isNewObj;let vatManual=!!(r.vat);let ask=null;let billMode=!!r.clientId;let itEdit=isNew||r.status==='review';
   const PEN_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',CHECK_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   const cliOpts=()=>`<option value="">Choose client…</option>`+S.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,'fi')).map(c=>`<option value="${c.id}" ${c.id===r.clientId?'selected':''}>${esc(c.name)}</option>`).join('');
   const itSumText=()=>{const e=recExp(r),ex=(r.total||0)-e.gross;return 'Counted as expense: '+money(e.gross)+' (VAT '+money(e.vat)+')'+(ex>0?' · Left out: '+money(ex):'')};
+  const splitBtn=()=>(!isNew&&!r.billedInvoiceId&&(r.items||[]).length>=2)?`<div class="actions" style="margin-top:10px"><button class="btn" data-act="recSplit">${L('Split by category','Jaa kategorioihin')}</button></div>`:'';
+  const splitNote=()=>{const sp=splitInfo(r);if(!sp)return '';return `<div class="splnote"><div>${L('This receipt is part '+sp.k+' of '+sp.n+' of a split receipt.'+(r.imageId?' The file below is the full original receipt.':''),'Tämä kuitti on osa '+sp.k+'/'+sp.n+' jaetusta kuitista.'+(r.imageId?' Alla oleva tiedosto on koko alkuperäinen kuitti.':''))}</div>${sp.g.filter(x=>x.id!==r.id).map(x=>`<button type="button" class="btn sm" data-act="recSib" data-id="${esc(x.id)}">${esc(catName(x.category))} · ${money(x.total)}</button>`).join('')}</div>`};
+  /* rows that belong to the other part(s) of a split receipt: shown dimmed, ticking one moves it here */
+  /* rows read from the receipt file are only ticked off; just rows the person added (or any row of a receipt without a file) can be deleted */
+  const rowDel=x=>!!x.added||!(r.imageId||r.pdfId);
+  const othRows=()=>{const sp=splitInfo(r);if(!sp||r.billedInvoiceId)return [];return sp.g.filter(x=>x.id!==r.id&&!x.billedInvoiceId).flatMap(sb=>(sb.items||[]).map((x,i)=>({sb,i,x})))};
+  const othLbl=(sb,x)=>x.incl===false?L('not counted as expense','ei lasketa kuluksi'):othTag(sb);
+  const othTag=sb=>{const sp=splitInfo(sb);return (sp?L('Part ','Osa ')+sp.k+'/'+sp.n+' · ':'')+catName(sb.category)};
+  const othView=()=>othRows().map(({sb,x})=>`<div class="line done off"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted" data-notr>${esc(othLbl(sb,x))}</div></div><div class="mono dam">${money(x.total||0)}</div></div></div>`).join('');
+  const othEdit=()=>othRows().map(({sb,i,x})=>`<label class="itm off"><input type="checkbox" class="ick" data-oth="${esc(sb.id)}" data-oi="${i}" aria-label="${esc(L('Move this row to this part','Siirrä tämä rivi tähän osaan'))}"><div class="ib"><div>${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}</div><div class="small muted" data-notr>${esc(othLbl(sb,x))} · ${fmtRate(+x.vatRate||0)} % ${L('VAT','ALV')}</div></div><div class="mono">${money(x.total||0)}</div></label>`).join('');
+  const moveRow=async(sid,i)=>{const sb=S.receipts.find(x=>x.id===sid);if(!sb||sb.billedInvoiceId||r.billedInvoiceId)return;const s2=clone(sb);if(!s2.items||!s2.items[i])return;const [x]=s2.items.splice(i,1);
+    r.items=r.items||[];r.items.push({...x,incl:true});itRecalc();
+    try{if(s2.items.length)await save('receipts',recSum(s2));else await drop('receipts',s2.id);await save('receipts',r)}catch(err){return}
+    r0=JSON.stringify(r);redraw();commit();if(x.incl!==false)toast(L('Row moved to this receipt','Rivi siirretty kuitille'))};
   const itemsHtml=()=>{
     const it=r.items||[];
     if(!it.length)return `<div class="f"><span class="lab">Items</span><div class="actions"><button class="btn sm" data-act="itAdd">Add item</button></div></div>`;
     if(!itEdit)return `<div class="f"><div class="line-head" style="margin:0"><span class="lab">Items</span><button class="btn sm ur" data-act="itEditOn" aria-label="Modify items">${PEN_SVG}</button></div>
-      <div class="itfold">${it.map(x=>`<div class="line done${x.incl===false?' off':''}"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted">${fmtRate(+x.vatRate||0)} % VAT${x.incl===false?' · not counted as expense':''}</div></div><div class="mono dam">${money(x.total||0)}</div></div></div>`).join('')}</div>
-      <div class="small" id="itsum" style="margin-top:6px">${esc(itSumText())}</div>
+      <div class="itfold">${it.map(x=>`<div class="line done${x.incl===false?' off':''}"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted">${fmtRate(+x.vatRate||0)} % VAT${x.incl===false?' · not counted as expense':''}</div></div><div class="mono dam">${money(x.total||0)}</div></div></div>`).join('')}${othView()}</div>
+      <div class="small" id="itsum" style="margin-top:6px">${esc(itSumText())}</div>${splitBtn()}
 </div>`;
     const sumAll=it.reduce((t,x)=>t+(x.total||0),0);
     const warn=Math.abs(sumAll-(r.total||0))>2?`<div class="notice">The items add up to ${money(sumAll)} but the receipt total is ${money(r.total)}. Check the rows.</div>`:'';
     return `<div class="f"><div class="line-head" style="margin:0"><span class="lab">Items · tick what counts as a business expense</span>${isNew||r.status==='review'?'':`<button class="btn sm ur okb" data-act="itEditOff" aria-label="Done editing items">${CHECK_SVG}</button>`}</div>${warn}
       <div class="actions" style="margin:2px 0 8px"><button class="btn sm" data-act="itAll">Select all</button><button class="btn sm" data-act="itNone">Select none</button></div>
-      <div class="itms">${it.map((x,i)=>`<div class="itm${x.incl===false?' off':''}"><input type="checkbox" class="ick" data-it="incl" data-i="${i}" aria-label="Include in expenses" ${x.incl===false?'':'checked'}><div class="ib"><input data-it="desc" data-i="${i}" value="${esc(x.desc)}" aria-label="Product" placeholder="Product"><div class="ir"><input data-it="total" data-i="${i}" inputmode="decimal" value="${esc(inputMoney(x.total))}" aria-label="Price including VAT (€)" placeholder="0,00"><select data-it="vatRate" data-i="${i}" aria-label="VAT rate">${VATS.map(v=>`<option value="${v}" ${+x.vatRate===v?'selected':''}>${fmtRate(v)} %</option>`).join('')}</select>${it.length>1?`<button class="btn sm trash" data-act="itDel" data-i="${i}" aria-label="Remove item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>`:''}</div></div></div>`).join('')}<button class="itm itadd" data-act="itAdd"><span class="plus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span>Add item</span></button></div>
-      <div class="small" id="itsum" style="margin-top:6px">${esc(itSumText())}</div>
+      <div class="itms">${it.map((x,i)=>`<div class="itm${x.incl===false?' off':''}"><input type="checkbox" class="ick" data-it="incl" data-i="${i}" aria-label="Include in expenses" ${x.incl===false?'':'checked'}><div class="ib"><input data-it="desc" data-i="${i}" value="${esc(x.desc)}" aria-label="Product" placeholder="Product"><div class="ir"><input data-it="total" data-i="${i}" inputmode="decimal" value="${esc(inputMoney(x.total))}" aria-label="Price including VAT (€)" placeholder="0,00"><select data-it="vatRate" data-i="${i}" aria-label="VAT rate">${VATS.map(v=>`<option value="${v}" ${+x.vatRate===v?'selected':''}>${fmtRate(v)} %</option>`).join('')}</select>${it.length>1&&rowDel(x)?`<button class="btn sm trash" data-act="itDel" data-i="${i}" aria-label="Remove item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>`:''}</div></div></div>`).join('')}${othEdit()}<button class="itm itadd" data-act="itAdd"><span class="plus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span>Add item</span></button></div>
+      <div class="small" id="itsum" style="margin-top:6px">${esc(itSumText())}</div>${splitBtn()}
 </div>`;
   };
   const askNote=()=>{
     if(!ask)return '';
     const wrap=(inner)=>`<div class="modal-wrap"><div class="modal-bg" data-act="askNo"></div><div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="dlgT">${inner}</div></div>`;
-    if(ask.t==='item'){const x=(r.items||[])[ask.i]||{};return wrap(`<h3 id="dlgT">Remove this item?</h3><p>${esc((x.desc||'').trim()||'This row')}${x.total?' · '+money(x.total):''} will be removed and the receipt total recalculated. You can undo this with the undo button.</p><div class="actions"><button class="btn dlg-del" data-act="itDelYes">Remove item</button><button class="btn" data-act="askNo">Cancel</button></div>`)}
+    if(ask.t==='item'){const x=(r.items||[])[ask.i]||{};return wrap(`<h3 id="dlgT">Remove this item?</h3><p>${esc((x.desc||'').trim()||L('This row','Tämä rivi'))}${x.total?' · '+money(x.total):''} will be removed and the receipt total recalculated. You can undo this with the undo button.</p><div class="actions"><button class="btn dlg-del" data-act="itDelYes">Remove item</button><button class="btn" data-act="askNo">Cancel</button></div>`)}
     if(r.billedInvoiceId)return wrap(`<h3 id="dlgT">Can't delete this receipt</h3><p>It is billed on an invoice. Remove the invoice line first.</p><div class="actions"><button class="btn primary" data-act="askNo">OK</button></div>`);
     return wrap(`<h3 id="dlgT">Delete this receipt?</h3><p>The receipt and its saved ${r.isPdf?'PDF':'photo and PDF'} will be deleted.</p><div class="actions"><button class="btn dlg-del" data-act="recDelYes">Delete receipt</button><button class="btn" data-act="askNo">Cancel</button></div>`);
   };
@@ -2257,7 +2323,7 @@ function openReceipt(id,isNewObj){
   const refW=()=>{const b=$('#wBox',root);if(b)b.innerHTML=wHtml()};
   const body=()=>{
     const dup=dupOf(r);
-    return `${askNote()}${r.imageId?(r.isPdf?pdfPvHtml(r):`<img class="preview" alt="Receipt photo" src="/_blob/${esc(r.imageId)}">`):''}
+    return `${askNote()}${splitNote()}${r.imageId?(r.isPdf?pdfPvHtml(r):`<img class="preview" alt="Receipt photo" src="/_blob/${esc(r.imageId)}">`):''}
     ${r.imageId?'':`<div class="notice">No file is stored for this receipt.</div>`}
     ${r.status==='review'&&r.ocr?`<div class="notice info">Read automatically. Check the amount and date against the photo.</div>`:''}
     ${r.noReceipt&&r.status==='review'?`<div class="notice bad">No receipt found in the photo. Retake it or delete this entry.</div>`:r.status==='review'&&!r.ocr&&!isNew?`<div class="notice">Could not be read automatically. Fill in the details.</div>`:''}
@@ -2323,6 +2389,7 @@ function openReceipt(id,isNewObj){
     const it=(r.items||[])[+t.dataset.i];if(!it)return;
     if(k==='desc')it.desc=t.value;else if(k==='total'){it.total=toCents(t.value);itRecalc()}
   });
+  root.addEventListener('change',e=>{const o=e.target.dataset&&e.target.dataset.oth;if(o){moveRow(o,+e.target.dataset.oi);return}});
   root.addEventListener('change',e=>{
     const t=e.target,k=t.dataset&&t.dataset.it;if(!k)return;
     const it=(r.items||[])[+t.dataset.i];if(!it)return;
@@ -2365,11 +2432,15 @@ function openReceipt(id,isNewObj){
     if(a.dataset.act==='recUndo'){if(timer)commit();if(pos>0)restore(pos-1)}
     if(a.dataset.act==='recRedo'){if(pos<hist.length-1)restore(pos+1)}
     if(a.dataset.act==='askNo'){ask=null;redraw()}
+    if(a.dataset.act==='recSib'){const id=a.dataset.id;closeSheet();openReceipt(id)}
+    if(a.dataset.act==='recSplit'){if(!r.items||r.items.length<2)return;r.items=r.items.filter(x=>(x.desc||'').trim()||x.total);openSplit(r,()=>{closeSheet();go('receipts',true)})}
     if(a.dataset.act==='itEditOn'){itEdit=true;redraw()}
     if(a.dataset.act==='itEditOff'){itEdit=false;redraw()}
-    if(a.dataset.act==='itAdd'){r.items=r.items||[];r.items.push({id:uid(),desc:'',total:0,vatRate:+r.vatRate||(+S.settings.defVat||25.5),incl:true});redraw();commit()}
-    if(a.dataset.act==='itDel'){ask={t:'item',i:+a.dataset.i};redraw()}
-    if(a.dataset.act==='itDelYes'){commit();r.items.splice(ask.i,1);ask=null;if(r.items.length)itRecalc();redraw();commit()}
+    if(a.dataset.act==='itAdd'){r.items=r.items||[];r.items.push({id:uid(),desc:'',total:0,vatRate:+r.vatRate||(+S.settings.defVat||25.5),incl:true,added:true});redraw();commit()}
+    if(a.dataset.act==='itDel'){const di=+a.dataset.i;
+      ask={t:'item',i:di};redraw()}
+    if(a.dataset.act==='itDelYes'){commit();const di=ask.i,[gone]=r.items.splice(di,1);ask=null;if(r.items.length)itRecalc();redraw();commit();
+      offerAction(L('Item removed','Tuote poistettu'),L('Undo','Kumoa'),async()=>{if(!document.body.contains(root)||!gone)return;r.items.splice(Math.min(di,r.items.length),0,gone);itRecalc();redraw();commit()})}
     if(a.dataset.act==='itAll'||a.dataset.act==='itNone'){r.items.forEach(x=>{x.incl=a.dataset.act==='itAll'});redraw();commit()}
     if(a.dataset.act==='recPdf'){
       try{const b=await recPdfBlob(r);if(b)await saveFile(recFileName(r),b);else toast('File not found')}catch(err){toast('Could not create the PDF')}
@@ -2377,11 +2448,48 @@ function openReceipt(id,isNewObj){
     if(a.dataset.act==='recDel'){ask={t:'rec'};redraw()}
     if(a.dataset.act==='recDelYes'){
       if(r.billedInvoiceId){ask=null;redraw();return}
-      const origRc=clone(S.receipts.find(x=>x.id===r.id)||r);
+      const origRc=clone(S.receipts.find(x=>x.id===r.id)||r),back=rowsBack([origRc]);
+      for(const b of back)await save('receipts',b.after);
       await drop('receipts',r.id);
       closeSheet();
-      offerAction('Receipt deleted','Undo',async()=>{await save('receipts',origRc);toast('Restored')},()=>dropAssets([origRc.imageId,origRc.pdfId]));
+      offerAction(back.length?L('Part deleted. Its rows are kept in the other part, not counted.','Osa poistettu. Sen rivit säilyvät toisessa osassa, ei laskettuna.'):'Receipt deleted','Undo',async()=>{await save('receipts',origRc);for(const b of back)await save('receipts',b.before);toast('Restored')},()=>dropAssets([origRc.imageId,origRc.pdfId]));
     }
+  });
+}
+/* split one receipt into two linked parts, each with its own category */
+function openSplit(r,done){
+  const items=r.items||[],sel=new Set(),orig=clone(r);
+  let cat=Object.keys(CATS).find(k=>k!==r.category)||'other';
+  const sumOf=a=>a.reduce((t,x)=>t+(x.total||0),0);
+  const vatOf=a=>a.reduce((t,x)=>t+vatFrom(x.total||0,+x.vatRate||0),0);
+  const mainRate=a=>{const m=a.slice().sort((x,y)=>(y.total||0)-(x.total||0))[0];return m?+m.vatRate||0:+r.vatRate||0};
+  const body=()=>`<p class="small muted" style="margin:0 0 8px">${L('Tick the rows that move to a new part and give it a category. The total stays the same.','Valitse rivit, jotka siirretään uuteen osaan, ja anna sille kategoria. Yhteissumma pysyy samana.')}</p>
+    <div class="itms">${items.map((x,i)=>`<label class="itm"><input type="checkbox" class="ick" data-sp="${i}" aria-label="${esc((x.desc||'').trim())}"><div class="ib"><div>${esc((x.desc||'').trim())||L('No description','Ei kuvausta')}</div><div class="small muted">${fmtRate(+x.vatRate||0)} % ${L('VAT','ALV')}</div></div><div class="mono">${money(x.total||0)}</div></label>`).join('')}</div>
+    <div class="f" style="margin-top:12px"><label for="sp_cat">${L('Category of the new part','Uuden osan kategoria')}</label><select id="sp_cat">${Object.entries(CATS).map(([k,v])=>`<option value="${esc(k)}"${k===cat?' selected':''}>${esc(v)}</option>`).join('')}</select></div>
+    <div class="splsum" id="sp_sum"></div>
+    <div class="splnote">${L('Both parts share the same receipt file. VAT is calculated for each part.','Molemmat osat käyttävät samaa kuittitiedostoa. ALV lasketaan osille erikseen.')}</div>
+    <button class="btn primary" id="sp_go" data-act="spGo" style="width:100%;margin-top:8px" disabled>${L('Split into two parts','Jaa kahteen osaan')}</button>`;
+  const sh=openSheet(L('Split receipt','Jaa kuitti'),body),root=sh.el;
+  const upd=()=>{
+    const mv=items.filter((x,i)=>sel.has(i)),rest=items.filter((x,i)=>!sel.has(i));
+    $('#sp_sum',root).innerHTML=`<div><span class="d"><i class="dot"></i>${esc(catName(r.category))}</span><b>${money(sumOf(rest))}</b></div><div><span class="d"><i class="dot t"></i>${esc(catName(cat))}</span><b>${money(sumOf(mv))}</b></div><div class="tot"><span>${L('Total','Yhteensä')}</span><b>${money(sumOf(items))}</b></div>`;
+    $('#sp_go',root).disabled=!(mv.length&&rest.length);
+  };
+  upd();
+  root.addEventListener('change',e=>{const t=e.target;
+    if(t.dataset&&t.dataset.sp!==undefined){const i=+t.dataset.sp;if(t.checked)sel.add(i);else sel.delete(i);upd()}
+    else if(t.id==='sp_cat'){cat=t.value;upd()}});
+  root.addEventListener('click',async e=>{
+    const a=e.target.closest('[data-act=spGo]');if(!a||a.disabled)return;a.disabled=true;
+    const moved=items.filter((x,i)=>sel.has(i)),rest=items.filter((x,i)=>!sel.has(i));
+    const grp=S.receipts.filter(x=>x.splitId&&x.splitId===r.splitId);
+    const sid=r.splitId||uid(),maxIdx=Math.max(r.splitIdx||1,...grp.map(x=>x.splitIdx||1));
+    const part=clone(r);part.id=uid();part.createdAt=Date.now();part.items=clone(moved);part.category=cat;part.splitId=sid;part.splitIdx=maxIdx+1;part.billedInvoiceId='';part.warranty=false;delete part.warrantyEnd;delete part.warrantyYrs;part.fileName='';
+    part.total=sumOf(moved);part.vat=vatOf(moved);part.vatRate=mainRate(moved);
+    r.items=rest;r.splitId=sid;r.splitIdx=r.splitIdx||1;r.total=sumOf(rest);r.vat=vatOf(rest);r.vatRate=mainRate(rest);
+    try{await save('receipts',part);await save('receipts',r)}catch(err){a.disabled=false;return}
+    closeSheet();done();
+    offerAction(L('Receipt split into two parts','Kuitti jaettu kahteen osaan'),L('Undo','Kumoa'),async()=>{await save('receipts',orig);await drop('receipts',part.id);toast(L('Restored','Palautettu'))});
   });
 }
 function blankReceipt(){return {id:uid(),items:[],fileName:'',supplier:'',date:todayStr(),total:0,vat:0,vatRate:+S.settings.defVat||25.5,category:isProj()?'other':'materials',clientId:'',docNumber:'',supplierId:'',notes:'',imageId:'',pdfId:'',isPdf:false,status:'review',ocr:false,billedInvoiceId:'',createdAt:Date.now()}}
@@ -2413,6 +2521,7 @@ function recBaseName(r){
 }
 const cleanName=v=>{const n=String(v||'').replace(/[\\\/:*?"<>|\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim().replace(/\.pdf$/i,'').replace(/[. ]+$/,'').slice(0,100);return n?n+'.pdf':''};
 /* same date and supplier: first receipt keeps the plain name, later ones get _2, _3 … ; a name typed by hand wins */
+const recFileOut=r=>{const sp=splitInfo(r);return recFileName(sp?sp.g[0]:r)};
 function recFileName(r){
   const own=cleanName(r.fileName);if(own)return own;
   const base=recBaseName(r).toLowerCase();
@@ -2875,7 +2984,8 @@ async function accountantPackage(v){
   const folder=accName+'-'+label,files=[];let missing=0;
   const seen=new Set(),add=(dir,name,blob)=>{let n=name,k=1;while(seen.has(dir+n))n=name.replace(/(\.pdf)?$/,'_'+(++k)+'$1');seen.add(dir+n);files.push({name:folder+'/'+dir+n,blob});return n};
   try{
-    for(const r of recs.slice().sort((a,b)=>a.date<b.date?-1:1)){const b=await recPdfBlob(r);if(b)add('receipts/',recFileName(r),b);else missing++}
+    const fdone=new Set();
+    for(const r of recs.slice().sort((a,b)=>a.date<b.date?-1:1)){const fk=r.pdfId||r.imageId;if(fk&&fdone.has(fk))continue;const b=await recPdfBlob(r);if(b){if(fk)fdone.add(fk);add('receipts/',recFileOut(r),b)}else missing++}
     files.push({name:folder+'/receipts.csv',blob:new Blob([csvReceipts(recs)],{type:'text/csv'})});
     for(const i of invs.slice().sort((a,b)=>a.number-b.number))add('invoices/','lasku-'+i.number+'.pdf',makePdf(i));
     if(!isProj())files.push({name:folder+'/invoices.csv',blob:new Blob([csvInvoices(invs)],{type:'text/csv'})});
@@ -2891,7 +3001,7 @@ function csvInvoices(list){
 }
 function csvReceipts(list){
   const rows=[['Date','Supplier','Business ID','Receipt no.','Category','Total','VAT %','VAT','Client','Status','Notes','File'].map(TT)];
-  (list||S.receipts).slice().sort((a,b)=>(a.date||'')<(b.date||'')?-1:1).forEach(r=>rows.push([dateFi(r.date),r.supplier,r.supplierId||'',r.docNumber,catName(r.category)||'',csvNum(recExp(r).gross),fmtRate(r.vatRate),csvNum(recExp(r).vat),(client(r.clientId)||{}).name||TT('Own expense'),TT(r.status==='ok'?'Confirmed':'To check'),r.notes,recFileName(r)]));
+  (list||S.receipts).slice().sort((a,b)=>(a.date||'')<(b.date||'')?-1:1).forEach(r=>rows.push([dateFi(r.date),r.supplier,r.supplierId||'',r.docNumber,catName(r.category)||'',csvNum(recExp(r).gross),fmtRate(r.vatRate),csvNum(recExp(r).vat),(client(r.clientId)||{}).name||TT('Own expense'),TT(r.status==='ok'?'Confirmed':'To check'),r.notes,recFileOut(r)]));
   return '﻿'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n');
 }
 
@@ -2946,6 +3056,8 @@ const ACT={
   sortPick:a=>{const k=a.dataset.k,v=a.dataset.v;S.sort[k]=v;const m=document.getElementById('sortMenu');if(m){m.hidden=true;m.querySelectorAll('.si').forEach(x=>{const on=x.dataset.v===v;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))})}const bt=document.querySelector('.sortbtn');if(bt){bt.classList.toggle('on',v!==SORT_DEF[k]);bt.setAttribute('aria-expanded','false')}const b=$('#listBox');if(b)b.innerHTML=listFor(k)},
   mSelMode:a=>{const sm=document.getElementById('sortMenu');if(sm){sm.hidden=true;const sb=document.querySelector('[data-act=sortToggle]');if(sb)sb.setAttribute('aria-expanded','false')}const k=a.dataset.k;if(SEL.k===k){SEL.k='';SEL.ids.clear()}else{SEL.k=k;SEL.ids.clear()}mRefresh()},
   mSelExit:()=>{SEL.k='';SEL.ids.clear();mRefresh()},
+  recGrp:a=>{const id=a.dataset.id;RECOPEN.has(id)?RECOPEN.delete(id):RECOPEN.add(id);mRefresh()},
+  mSelGrp:a=>{const g=S.receipts.filter(x=>x.splitId===a.dataset.id),all=g.every(x=>SEL.ids.has(x.id));g.forEach(x=>all?SEL.ids.delete(x.id):SEL.ids.add(x.id));mRefresh()},
   mSel:a=>{const id=a.dataset.id;SEL.ids.has(id)?SEL.ids.delete(id):SEL.ids.add(id);mRefresh()},
   mSelAll:()=>{const all=SEL.vis.length&&SEL.vis.every(x=>SEL.ids.has(x));SEL.vis.forEach(x=>all?SEL.ids.delete(x):SEL.ids.add(x));mRefresh()},
   mSelDl:()=>{if(SEL.ids.size)downloadPdfs(SEL.k,new Set(SEL.ids))},
@@ -2962,7 +3074,7 @@ const ACT={
     const w=$('#mBulk');if(w)w.remove();const k=SEL.k;let n=0;
     const U={docs:[],mods:[],assets:[]};
     if(k==='inv'){for(const i of S.invoices.filter(x=>SEL.ids.has(x.id))){for(const r of S.receipts.filter(r=>r.billedInvoiceId===i.id)){U.mods.push(['receipts',clone(r)]);await save('receipts',{...r,billedInvoiceId:''})}U.docs.push(['invoices',clone(i)]);await drop('invoices',i.id);n++}}
-    else{for(const x of S.receipts.filter(x=>SEL.ids.has(x.id)&&!x.billedInvoiceId)){U.docs.push(['receipts',clone(x)]);await drop('receipts',x.id);U.assets.push(x.imageId,x.pdfId);n++}}
+    else{const gone=S.receipts.filter(x=>SEL.ids.has(x.id)&&!x.billedInvoiceId);for(const b of rowsBack(gone)){U.mods.push(['receipts',b.before]);await save('receipts',b.after)}for(const x of gone){U.docs.push(['receipts',clone(x)]);await drop('receipts',x.id);U.assets.push(x.imageId,x.pdfId);n++}}
     SEL.k='';SEL.ids.clear();render();
     offerAction(n+(k==='inv'?' invoice':' receipt')+(n===1?'':'s')+' deleted','Undo',async()=>{for(const [c,o] of U.docs)await save(c,o);for(const [c,o] of U.mods)await save(c,o);toast('Restored')},()=>dropAssets(U.assets))},
   qDel:a=>{S.queue=S.queue.filter(x=>x.id!==a.dataset.qid);renderQueue()},
