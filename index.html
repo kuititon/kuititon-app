@@ -2154,13 +2154,13 @@ function openReceipt(id,isNewObj){
     <div class="f cwrap"><label for="r_catbtn">Category</label><button type="button" class="selbtn" id="r_catbtn" data-act="ctOpen" aria-haspopup="listbox" aria-expanded="${ctOpen}"><span>${esc(CATS[ctKey()])}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div id="ctBox">${ctOpen?ctPanel():''}</div></div>
     ${isProj()?'':`<div class="f"><span class="lab">Expense type</span><div class="list"><label class="pick"><input type="radio" name="r_kind" value="own" data-r="kind" ${billMode?'':'checked'}><span>Own expense</span></label><label class="pick"><input type="radio" name="r_kind" value="bill" data-r="kind" ${billMode?'checked':''}><span>Billable to client</span></label></div></div>`}
     ${billMode||isProj()?`<div class="f cwrap"><label for="r_client">${cw('Client','Contractor (optional)')}</label><button type="button" class="selbtn" id="r_client" data-act="rcOpen" aria-haspopup="listbox" aria-expanded="${rcOpen}"><span class="${client(r.clientId)?'':'muted'}">${esc((client(r.clientId)||{}).name||'Choose…')}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div id="rcBox">${rcOpen?rcPanel():''}</div></div>`:''}
-    <div class="f"><label for="r_fname">File name</label><input id="r_fname" class="mono" data-r="fileName" value="${esc(recFileName(r))}" autocomplete="off" autocapitalize="off" spellcheck="false" style="font-size:14px">${r.imageId?`<div class="actions" style="margin-top:6px"><button class="btn sm" data-act="recPdf">Download PDF</button></div>`:''}<span class="small muted">Generated from the date and supplier. Edit it to use your own name, or clear it to generate it again.</span></div>
+    <div class="f"><label for="r_fname">File name</label><input id="r_fname" class="mono" data-r="fileName" value="${esc(recFileName(r))}" autocomplete="off" autocapitalize="off" spellcheck="false" style="font-size:14px"><span class="small muted">Generated from the date and supplier. Edit it to use your own name, or clear it to generate it again.</span></div>
     <div class="f"><label for="r_notes">Notes</label><textarea id="r_notes" data-r="notes">${esc(r.notes)}</textarea></div>
     <div class="actions"><button class="btn primary" data-act="recOk">${r.status==='review'?'Confirm receipt':'Save'}</button>
     ${isNew?'':`<button class="btn danger" data-act="recDel">${TRASH_ICON}Delete</button>`}</div>`;
   };
   const URI=(d)=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-  const sh=openSheet(isNew?'New receipt':'Receipt',body,{right:`<span class="urs"><button class="btn sm ur" data-act="recUndo" aria-label="Undo" disabled>${URI('M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3')}</button><button class="btn sm ur" data-act="recRedo" aria-label="Redo" disabled>${URI('M15 14l5-5-5-5M20 9H10a6 6 0 000 12h3')}</button></span>`});
+  const sh=openSheet(isNew?'New receipt':'Receipt',body,{right:`<span class="urs"><button class="btn sm ur" data-act="recPdf" aria-label="Download PDF" ${r.imageId?'':'disabled'}>${URI('M12 4v10.5M7.5 10.5l4.5 4.5 4.5-4.5M5 19.5h14')}</button><button class="btn sm ur" data-act="recUndo" aria-label="Undo" disabled>${URI('M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3')}</button><button class="btn sm ur" data-act="recRedo" aria-label="Redo" disabled>${URI('M15 14l5-5-5-5M20 9H10a6 6 0 000 12h3')}</button></span>`});
   const root=sh.el;
   guardLeave(sh,()=>JSON.stringify(r)!==r0);
   root.addEventListener('click',e=>{
@@ -2186,7 +2186,7 @@ function openReceipt(id,isNewObj){
   const redraw=()=>{sh.el.querySelector('.sheet-body').innerHTML=body()};
   const snap=()=>JSON.stringify({r,vatManual,billMode});
   let hist=[snap()],pos=0,timer=null;
-  const syncUR=()=>{const u=root.querySelector('[data-act=recUndo]'),d=root.querySelector('[data-act=recRedo]');if(u)u.disabled=!(pos>0||timer);if(d)d.disabled=pos>=hist.length-1};
+  const syncUR=()=>{const u=root.querySelector('[data-act=recUndo]'),d=root.querySelector('[data-act=recRedo]'),pf=root.querySelector('[data-act=recPdf]');if(pf)pf.disabled=!r.imageId;if(u)u.disabled=!(pos>0||timer);if(d)d.disabled=pos>=hist.length-1};
   const commit=()=>{clearTimeout(timer);timer=null;const sn=snap();if(sn!==hist[pos]){hist.length=pos+1;hist.push(sn);pos++;if(hist.length>80){hist.shift();pos--}}syncUR()};
   const later=()=>{clearTimeout(timer);timer=setTimeout(commit,600);syncUR()};
   const restore=n=>{const o=JSON.parse(hist[n]);Object.keys(r).forEach(k=>delete r[k]);Object.assign(r,o.r);vatManual=o.vatManual;billMode=o.billMode;pos=n;ask=null;rcOpen=false;ctOpen=false;redraw();syncUR()};
