@@ -487,6 +487,11 @@
     signOut: function () { return sb.auth.signOut(); },
     changePassword: changePassword,
     user: function () { var u = (session && session.user) || {}; return { name: (u.user_metadata && u.user_metadata.full_name) || '', email: u.email || '', admin: !!(profile && profile.is_admin) }; },
+    setPlan: async function (v) {
+      var r = await sb.rpc('admin_set_plan', { p_plan: v });
+      if (r.error) throw dbErr(r.error);
+      await loadProfile(); fire('meta/general');
+    },
     sb: sb
   };
 

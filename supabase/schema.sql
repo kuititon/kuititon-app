@@ -137,3 +137,23 @@ alter table public.profiles add column if not exists sub_interval           text
 alter table public.profiles add column if not exists sub_period_end         timestamptz;
 alter table public.profiles add column if not exists sub_cancel_at_end      boolean not null default false;
 create unique index if not exists profiles_stripe_customer_idx on public.profiles (stripe_customer_id) where stripe_customer_id is not null;
+
+-- Admin-only plan switcher for testing (used by the Developer section in Settings).
+create or replace function public.admin_set_plan(p_plan text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if not exists (select 1 from public.profiles where user_id = auth.uid() and is_admin) then
+    raise exception 'not allowed';
+  end if;
+  if p_plan in ('business','projects') then
+    update public.profiles set plan = p_plan where user_id = auth.uid();
+  elsif p_plan = 'trial' then
+    update public.profiles set plan = 'trial', trial_start = now(), scans_trial = 0 where user_id = auth.uid();
+  elsif p_plan = 'none' then
+    update public.profiles set plan = 'trial', trial_start = now() - interval '31 days' where user_id = auth.uid();
+  else
+    raise exception 'bad plan';
+  end if;
+end $$;
+revoke all on function public.admin_set_plan(text) from public, anon;
+grant execute on function public.admin_set_plan(text) to authenticated;
