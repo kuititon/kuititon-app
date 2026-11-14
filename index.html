@@ -171,6 +171,10 @@ h2{font:600 13px/1.2 var(--body);margin:26px 0 8px;letter-spacing:.08em;text-tra
 .sutype .tp{display:block;font-size:13px;font-weight:600;margin-top:8px;line-height:1.3}
 .sutype .tc{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center}
 .sutype .tc svg{width:14px;height:14px;fill:none;stroke:var(--accent-ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.sutype.off{opacity:.45;pointer-events:none}
+.sutag{display:inline-block;margin-left:8px;vertical-align:2px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent-text)}
+.sutype.on .sutag{background:var(--surface)}
+.sulab{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 -2px}
 .sutype.on{border-color:var(--ink);background:var(--accent);color:var(--accent-ink)}
 .sutype.on .td{color:inherit;opacity:.8}
 .sutype.on .tc{background:var(--ink);border-color:var(--ink)}
@@ -790,7 +794,7 @@ const FI={
 'File name':'Tiedoston nimi','Generated automatically from the date and supplier. Edit it if needed.':'Luotu automaattisesti päivämäärän ja toimittajan perusteella, voit muokata nimeä halutessasi.',
 'Notes':'Muistiinpanot','Confirm receipt':'Vahvista kuitti','This year':'Kuluva vuosi','No earlier data':'Ei aiempaa tietoa','Earlier years':'Aiemmat vuodet','So far':'tähän mennessä','vs previous year':'vs edellinen vuosi','Edit categories':'Muokkaa kategorioita','New category':'Uusi kategoria','Add category…':'Lisää kategoria…','Default categories':'Oletuskategoriat','HVAC & electrical':'LVI- ja sähkötyöt','Materials':'Tarvikkeet','Tools':'Työkalut','"Other" is always kept. Receipts in a removed category show as Other.':'"Muut" säilyy aina. Poistetun kategorian kuitit näkyvät kategoriassa Muut.',"Default categories can't be renamed. A category you add must have a name.":'Oletuskategorioita ei voi nimetä uudelleen. Lisäämälläsi kategorialla on oltava nimi.','Clear category filter':'Poista kategoriasuodatin','Saving receipt…':'Tallennetaan kuittia…','Save':'Tallenna',
 'Business ID looks wrong. It should be like 1234567-8':'Y-tunnus näyttää väärältä. Sen pitäisi olla muotoa 1234567-8','Enter the total':'Anna kokonaissumma','Enter the date':'Anna päivämäärä','Receipt saved':'Kuitti tallennettu',
-'Own expenses':'Omat kulut','Warranty ending':'Takuu päättymässä','Welcome':'Tervetuloa','Getting started takes just a few steps':'Alkuun pääset muutamalla askeleella','Choose your language':'Valitse kieli','Continue':'Jatka','Your profile':'Profiilisi','Tell us who you are. You\'ll use these details to sign in.':'Kerro, kuka olet. Näillä tiedoilla kirjaudut sisään.','Enter your full name':'Anna koko nimesi','Enter a valid email address':'Anna kelvollinen sähköpostiosoite','Business email':'Yrityksen sähköposti','Fill in your business details once and they are used on every invoice. You can change everything later in Settings.':'Täytä yrityksesi tiedot kerran, niin ne tulevat jokaiselle laskulle. Voit muuttaa kaiken myöhemmin Asetuksissa.','Save and start':'Tallenna ja aloita','Skip for now':'Ohita toistaiseksi','Units':'Yksiköt','Add unit':'Lisää yksikkö','Unit name':'Yksikön nimi','Make default':'Aseta oletukseksi','Units for invoice lines. The first unit is used for new lines. Drag the handle to change the order. Existing invoices keep their unit.':'Yksiköt laskuriveille. Ensimmäistä yksikköä käytetään uusilla riveillä. Voit muuttaa järjestystä vetämällä kahvasta. Aiemmat laskut säilyttävät yksikkönsä.','Units reset':'Yksiköt palautettu','Enter an invoice reference':'Anna laskun viite','Invoice reference (required)':'Laskun viite (pakollinen)','Account details are missing. Add them in settings before sending the invoice.':'Tilitiedot puuttuvat, lisää ne asetuksista ennen laskun lähettämistä.','missing in account settings. Add them before sending.':'puuttuu tilin asetuksista. Lisää ne ennen lähettämistä.','Fill in the missing account details first':'Täytä puuttuvat tilitiedot ensin','Admin':'Ylläpito','Developer':'Kehittäjä','Could not change status':'Tilan vaihto epäonnistui','Contact info':'Yhteystiedot','Mobile number':'Puhelinnumero','Show admin tools':'Näytä ylläpitotyökalut','Hide admin tools':'Piilota ylläpitotyökalut','Developer tools, visible only to admin users. In the wizard, email is optional for admins.':'Kehittäjätyökalut, näkyvät vain ylläpitäjille. Käyttöönotossa sähköposti on ylläpitäjälle vapaaehtoinen.','Run setup wizard again':'Suorita käyttöönotto uudelleen','Opens the setup wizard without deleting anything.':'Avaa käyttöönoton poistamatta mitään.','Clear all data':'Tyhjennä kaikki tiedot','Deletes every account with its clients, invoices, receipts and settings, and restarts the app.':'Poistaa kaikki tilit asiakkaineen, laskuineen, kuitteineen ja asetuksineen ja käynnistää sovelluksen uudelleen.','This permanently deletes all accounts with every client, invoice, receipt and setting. It cannot be undone.':'Tämä poistaa pysyvästi kaikki tilit asiakkaineen, laskuineen, kuitteineen ja asetuksineen. Toimintoa ei voi perua.','Type DELETE to confirm':'Vahvista kirjoittamalla DELETE','Fill in your business details once and they are used on every invoice.':'Täytä yrityksesi tiedot kerran, niin ne tulevat jokaiselle laskulle.','Business name (required)':'Yrityksen nimi (pakollinen)','You can edit your account details later in settings and add multiple accounts to your user.':'Voit muokata tilisi tietoja myöhemmin asetuksissa sekä lisätä useita tilejä käyttäjällesi.','Enter your business name':'Anna yrityksen nimi','Skip':'Ohita','Own expense':'Oma kulu','Custom…':'Mukautettu…','Start date':'Alkupäivä','End date':'Loppupäivä','Pick a start and end date':'Valitse alku- ja loppupäivä','Start date must be before end date':'Alkupäivän on oltava ennen loppupäivää','Open':'Avoimet',
+'Own expenses':'Omat kulut','Warranty ending':'Takuu päättymässä','Welcome':'Tervetuloa','Give your project an identifiable name.':'Anna projektillesi tunnistettava nimi.','How do you want to start? You can change your plan anytime.':'Miten haluat aloittaa? Voit vaihtaa tilausta milloin haluat.','Free trial':'Ilmainen kokeilu','30-day free trial. Includes one business account and one project account.':'30 päivän ilmainen kokeilujakso. Sisältää yhden yritystilin ja yhden projektitilin.','Plan is chosen when the trial period ends':'Tilaus valitaan, kun kokeilujakso päättyy','Subscribe now':'Tilaa heti','Full functionality from the start.':'Täydet toiminnallisuudet alusta lähtien.','Choose a plan below':'Valitse tilaus alla','Choose plan':'Valitse tilaus','7,90 €/month or 79 €/year':'7,90 €/kk tai 79 €/v','3,90 €/month or 39 €/year':'3,90 €/kk tai 39 €/v','Next you pay for the subscription securely through our payment provider.':'Seuraavaksi maksat tilauksen turvallisesti maksupalveluntarjoajan kautta.','Business account':'Yritystili','Project account':'Projektitili','Your account':'Tilisi tiedot','Enter your business name. You can fill in the rest in settings.':'Täytä yrityksesi nimi, loput tiedot voit täydentää asetuksista.','Getting started takes just a few steps':'Alkuun pääset muutamalla askeleella','Choose your language':'Valitse kieli','Continue':'Jatka','Your profile':'Profiilisi','Tell us who you are. You\'ll use these details to sign in.':'Kerro, kuka olet. Näillä tiedoilla kirjaudut sisään.','Enter your full name':'Anna koko nimesi','Enter a valid email address':'Anna kelvollinen sähköpostiosoite','Business email':'Yrityksen sähköposti','Fill in your business details once and they are used on every invoice. You can change everything later in Settings.':'Täytä yrityksesi tiedot kerran, niin ne tulevat jokaiselle laskulle. Voit muuttaa kaiken myöhemmin Asetuksissa.','Save and start':'Tallenna ja aloita','Skip for now':'Ohita toistaiseksi','Units':'Yksiköt','Add unit':'Lisää yksikkö','Unit name':'Yksikön nimi','Make default':'Aseta oletukseksi','Units for invoice lines. The first unit is used for new lines. Drag the handle to change the order. Existing invoices keep their unit.':'Yksiköt laskuriveille. Ensimmäistä yksikköä käytetään uusilla riveillä. Voit muuttaa järjestystä vetämällä kahvasta. Aiemmat laskut säilyttävät yksikkönsä.','Units reset':'Yksiköt palautettu','Enter an invoice reference':'Anna laskun viite','Invoice reference (required)':'Laskun viite (pakollinen)','Account details are missing. Add them in settings before sending the invoice.':'Tilitiedot puuttuvat, lisää ne asetuksista ennen laskun lähettämistä.','missing in account settings. Add them before sending.':'puuttuu tilin asetuksista. Lisää ne ennen lähettämistä.','Fill in the missing account details first':'Täytä puuttuvat tilitiedot ensin','Admin':'Ylläpito','Developer':'Kehittäjä','Could not change status':'Tilan vaihto epäonnistui','Contact info':'Yhteystiedot','Mobile number':'Puhelinnumero','Show admin tools':'Näytä ylläpitotyökalut','Hide admin tools':'Piilota ylläpitotyökalut','Developer tools, visible only to admin users. In the wizard, email is optional for admins.':'Kehittäjätyökalut, näkyvät vain ylläpitäjille. Käyttöönotossa sähköposti on ylläpitäjälle vapaaehtoinen.','Run setup wizard again':'Suorita käyttöönotto uudelleen','Opens the setup wizard without deleting anything.':'Avaa käyttöönoton poistamatta mitään.','Clear all data':'Tyhjennä kaikki tiedot','Deletes every account with its clients, invoices, receipts and settings, and restarts the app.':'Poistaa kaikki tilit asiakkaineen, laskuineen, kuitteineen ja asetuksineen ja käynnistää sovelluksen uudelleen.','This permanently deletes all accounts with every client, invoice, receipt and setting. It cannot be undone.':'Tämä poistaa pysyvästi kaikki tilit asiakkaineen, laskuineen, kuitteineen ja asetuksineen. Toimintoa ei voi perua.','Type DELETE to confirm':'Vahvista kirjoittamalla DELETE','Fill in your business details once and they are used on every invoice.':'Täytä yrityksesi tiedot kerran, niin ne tulevat jokaiselle laskulle.','Business name (required)':'Yrityksen nimi (pakollinen)','You can edit your account details later in settings and add multiple accounts to your user.':'Voit muokata tilisi tietoja myöhemmin asetuksissa sekä lisätä useita tilejä käyttäjällesi.','Enter your business name':'Anna yrityksen nimi','Skip':'Ohita','Own expense':'Oma kulu','Custom…':'Mukautettu…','Start date':'Alkupäivä','End date':'Loppupäivä','Pick a start and end date':'Valitse alku- ja loppupäivä','Start date must be before end date':'Alkupäivän on oltava ennen loppupäivää','Open':'Avoimet',
 /* settings */
 'Your business':'Yrityksesi','Payment details':'Maksutiedot','Invoice defaults':'Laskun oletukset','Default VAT':'Oletus-ALV','Late interest (%)':'Viivästyskorko (%)','Logo':'Logo',
 'Replace logo':'Vaihda logo','Remove logo':'Poista logo','Upload logo (PNG or JPG)':'Lataa logo (PNG tai JPG)','Save settings':'Tallenna asetukset','Settings saved':'Asetukset tallennettu','Could not save settings':'Asetusten tallennus epäonnistui',
@@ -1704,9 +1708,9 @@ function viewReport(){
 }
 const VIEWS={budget:viewBudget,home:viewHome,invoices:viewInvoices,receipts:viewReceipts,clients:viewClients,settings:viewSettings,general:viewGeneral,cats:viewCats,units:viewUnits,report:viewReport};
 
-const segGeo=()=>{const b=document.querySelector('.seg button[aria-pressed=true]');return b?{x:b.offsetLeft,w:b.offsetWidth}:null};
-function placeSeg(from){
-  const pill=document.querySelector('.seg .seg-pill'),cur=document.querySelector('.seg button[aria-pressed=true]');
+const segGeo=(root)=>{const b=(root||document).querySelector('.seg button[aria-pressed=true]');return b?{x:b.offsetLeft,w:b.offsetWidth}:null};
+function placeSeg(from,root){
+  const R=root||document,pill=R.querySelector('.seg .seg-pill'),cur=R.querySelector('.seg button[aria-pressed=true]');
   if(!pill||!cur)return;
   if(from){pill.style.transition='none';pill.style.width=from.w+'px';pill.style.transform='translateX('+from.x+'px)';void pill.offsetWidth;pill.style.transition=''}
   else pill.style.transition='none';
@@ -3191,7 +3195,8 @@ async function boot(){
 let setupSh=null,setupShown=false,setupBackup=null,setupFresh=false;
 const setupNeeded=()=>S.loaded&&S.genLoaded&&S.acct==='main'&&!S.gen.setupDone&&!S.clients.length&&!S.invoices.length&&!S.receipts.length&&!S.settings.iban&&!S.settings.bizId;
 let setupStep=0,setupErr='';
-const setupTitles=['Welcome','Your profile','Choose your plan','Your business'];
+const setupTitles=['Welcome','Your profile','Choose your plan','Your account'];
+let setupMode='';
 const emailOk=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v||'').trim());
 function setupBody(){
   const s=S.settings,g=S.gen;
@@ -3211,40 +3216,26 @@ function setupBody(){
     <button class="btn primary" data-act="setupNext" style="width:100%;margin-top:8px">Continue</button>`;
   }
   if(setupStep===2){
-    const cur=g.profileType;
-    const card=(v,ti,tt,td,ic)=>`<button type="button" class="sutype${cur===v?' on':''}" data-act="setupType" data-v="${v}" aria-pressed="${cur===v}"><span class="ti" aria-hidden="true">${ic}</span><span class="tx"><span class="tt">${tt}</span><span class="td">${td}</span><span class="tp">${ti}</span></span><span class="tc" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`;
-    return `${dots}<p class="small muted" style="margin:0 0 4px">Choose how you will use the app. You can change your plan later.</p>
-    <div class="sutypes" role="group" aria-label="Plan">
-    ${card('account','30-day free trial, then 7,90 €/month or 79 €/year','For Business','A tool for invoicing, receipt handling and financial tracking for your business. Also includes Project accounts.','<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>')}
-    ${card('project','30-day free trial, then 3,90 €/month or 39 €/year','For Projects','A solution for managing and tracking the costs of individual projects or maintained property','<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>')}
+    const cur=g.profileType,sub=setupMode==='sub';
+    const card=(act,v,on,off,tt,td,tp,ic,tag)=>`<button type="button" class="sutype${on?' on':''}${off?' off':''}" data-act="${act}" data-v="${v}" aria-pressed="${on}"${off?' disabled':''}><span class="ti" aria-hidden="true">${ic}</span><span class="tx"><span class="tt">${tt}${tag?`<span class="sutag">${tag}</span>`:''}</span><span class="td">${td}</span><span class="tp">${tp}</span></span><span class="tc" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`;
+    return `${dots}<p class="small muted" style="margin:0 0 4px">How do you want to start? You can change your plan anytime.</p>
+    <div class="sutypes" role="group" aria-label="Start">
+    ${card('setupMode','trial',setupMode==='trial',false,'Free trial','30-day free trial. Includes one business account and one project account.','Plan is chosen when the trial period ends','<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>','0 €')}
+    ${card('setupMode','sub',sub,false,'Subscribe now','Full functionality from the start.','Choose a plan below','<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg>')}
     </div>
-    <button class="btn primary" data-act="setupNext" id="suTypeGo" style="width:100%;margin-top:8px"${cur?'':' disabled'}>Continue</button>`;
+    <div class="sulab">Choose plan</div>
+    <div class="sutypes" role="group" aria-label="Plan">
+    ${card('setupType','account',sub&&cur==='account',!sub,'For Business','A tool for invoicing, receipt handling and financial tracking for your business. Also includes Project accounts.','7,90 €/month or 79 €/year','<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>')}
+    ${card('setupType','project',sub&&cur==='project',!sub,'For Projects','A solution for managing and tracking the costs of individual projects or maintained property','3,90 €/month or 39 €/year','<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>')}
+    </div>
+    ${sub&&cur?'<div class="sunote"><span>Next you pay for the subscription securely through our payment provider.</span></div>':''}
+    <button class="btn primary" data-act="setupNext" id="suTypeGo" style="width:100%;margin-top:8px"${setupMode==='trial'||(sub&&cur)?'':' disabled'}>Continue</button>`;
   }
   const fld=(k,l,ph,extra)=>`<div class="f"><label for="u_${k}">${l}</label><input id="u_${k}" data-s="${k}" value="${esc(s[k]||'')}" placeholder="${ph||''}" ${extra||''}></div>`;
-  if(g.profileType==='project')return `${dots}<p class="small muted" style="margin:0 0 4px">Give your project a name. You can add more projects later.</p>
-  ${fld('bizName','Project name (required)','For example: Home renovation',' required')}
-  <button class="btn primary" data-act="setupSave" style="width:100%;margin-top:8px">Save and start</button>`;
-  return `${dots}<p class="small muted" style="margin:0 0 4px">Fill in your business details once and they are used on every invoice.</p>
-  <div class="sunote"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>You can edit your account details later in settings and add multiple accounts to your user.</span></div>
-  <h2>Your business</h2>
-  ${fld('bizName','Business name (required)','',' required')}
-  <div class="grid2">${fld('bizId','Business ID (Y-tunnus)','1234567-8')}${fld('vatNo','VAT number','FI12345678')}</div>
-  ${fld('street','Street address')}
-  <div class="grid2">${fld('zip','Postcode')}${fld('city','City')}</div>
-  <h2>Contact info</h2>
-  ${fld('email','Business email','',' type="email" inputmode="email"')}
-  ${fld('phone','Mobile number','',' inputmode="tel"')}
-  <h2>Payment details</h2>
-  ${fld('iban','IBAN','FI00 0000 0000 0000 00',' inputmode="numeric" autocomplete="off"')}
-  ${ibanErrHtml('u_iban_err')}
-  ${fld('bic','BIC','NDEAFIHH')}
-  <h2>Invoice defaults</h2>
-  <div class="grid2">
-    <div class="f"><label for="u_payDays">Payment term</label><select id="u_payDays" data-s="payDays">${termOpts(+s.payDays)}</select></div>
-    <div class="f"><label for="u_defVat">Default VAT</label><select id="u_defVat" data-s="defVat">${VATS.map(v=>`<option value="${v}" ${+s.defVat===v?'selected':''}>${fmtRate(v)} %</option>`).join('')}</select></div>
-  </div>
-  <h2>Logo</h2>
-  <div class="f">${s.logo?`<img src="${esc(s.logo)}" alt="Logo" style="max-width:180px;max-height:90px;object-fit:contain;align-self:flex-start;margin-bottom:6px"><div class="actions"><button class="btn sm" data-act="logoPick">Replace logo</button><button class="btn sm" data-act="logoClear">Remove logo</button></div>`:`<button class="btn" data-act="logoPick">Upload logo (PNG or JPG)</button>`}</div>
+  const proj=g.profileType==='project';
+  const sw=setupMode==='trial'?`<div class="seg full" role="group" aria-label="Account type"><span class="seg-pill" aria-hidden="true"></span><button type="button" data-act="setupSwitch" data-v="account" aria-pressed="${!proj}">Business account</button><button type="button" data-act="setupSwitch" data-v="project" aria-pressed="${proj}">Project account</button></div>`:'';
+  return `${dots}${sw}<p class="small muted" style="margin:${sw?'10px':'0'} 0 4px">${proj?'Give your project an identifiable name.':'Enter your business name. You can fill in the rest in settings.'}</p>
+  ${fld('bizName',proj?'Project name (required)':'Business name (required)','',' required')}
   <button class="btn primary" data-act="setupSave" style="width:100%;margin-top:8px">Save and start</button>`;
 }
 function suFit(root){
@@ -3256,7 +3247,7 @@ function suFit(root){
 function setupRefresh(){
   const sh=setupSh;if(!sh)return;
   sh.el.querySelector('.sheet-body').innerHTML=setupBody();
-  const stt=setupStep===3&&S.gen.profileType==='project'?'Your project':setupTitles[setupStep];const h=sh.el.querySelector('.sheet-top h3');if(h)h.textContent=isFi()?TT(stt):stt;
+  const stt=setupTitles[setupStep];const h=sh.el.querySelector('.sheet-top h3');if(h)h.textContent=isFi()?TT(stt):stt;
   const b=sh.el.querySelector('.sheet-top .back');if(b)b.style.visibility=setupStep===0?'hidden':'visible';
   if(isFi())xlNode(sh.el);
   suFit(sh.el);
@@ -3271,7 +3262,8 @@ function setupNext(){
     g.fullName=g.fullName.trim();g.email=(g.email||'').trim();setupErr='';saveGen();setupStep=2;setupRefresh();return
   }
   if(setupStep===2){
-    if(!S.gen.profileType)return;
+    if(!setupMode||(setupMode==='sub'&&!S.gen.profileType))return;
+    if(setupMode==='trial'&&!S.gen.profileType)S.gen.profileType='account';
     saveGen();setupStep=3;setupErr='';setupRefresh()
   }
 }
@@ -3282,7 +3274,7 @@ function openSetup(){
   setupBackup={bizName:S.settings.bizName,web:S.settings.web};
   if(S.settings.bizName===DEF.bizName)S.settings.bizName='';
   if(S.settings.web===DEF.web)S.settings.web='';
-  setupStep=0;setupErr='';
+  setupStep=0;setupErr='';setupMode='';
   const sh=openSheet('Welcome',setupBody,{live:false});
   setupSh=sh;document.body.classList.add('in-setup');
   const b=sh.el.querySelector('.sheet-top .back');if(b)b.style.visibility='hidden';
@@ -3292,7 +3284,9 @@ function openSetup(){
     if(k==='setupDd'){const d=a.closest('.sudd');const o=d.classList.toggle('open');a.setAttribute('aria-expanded',o);return}
     if(k==='setupLang'){const d=a.closest('.sudd');if(d)d.classList.remove('open');if(S.gen.ui===a.dataset.v){return}S.gen.ui=a.dataset.v;saveGen();fadeLang(()=>{applyLang();setupRefresh()});return}
     if(k==='setupNext'){if(a.disabled)return;setupNext();return}
-    if(k==='setupType'){S.gen.profileType=a.dataset.v;sh.el.querySelectorAll('.sutype').forEach(x=>{const on=x===a;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on))});const go=sh.el.querySelector('#suTypeGo');if(go)go.disabled=false;return}
+    if(k==='setupMode'){setupMode=a.dataset.v;const sb=sh.el.querySelector('.sheet-body'),y=sb.scrollTop;setupRefresh();sb.scrollTop=y;return}
+    if(k==='setupType'){if(setupMode!=='sub')return;S.gen.profileType=a.dataset.v;const sb=sh.el.querySelector('.sheet-body'),y=sb.scrollTop;setupRefresh();sb.scrollTop=y;return}
+    if(k==='setupSwitch'){if(S.gen.profileType===a.dataset.v)return;const old=segGeo(sh.el);S.gen.profileType=a.dataset.v;setupRefresh();placeSeg(old,sh.el);return}
     if(['setupSave','setupSkip','logoPick','logoClear'].includes(k)&&ACT[k])ACT[k](a,e)});
   sh.el.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.p){S.gen[t.dataset.p]=t.value;if(setupErr){setupErr='';const p=sh.el.querySelector('.sheet-body p.small[style*=color]');if(p)p.remove()}}
     const k=t.dataset&&t.dataset.s;if(k&&t.tagName==='INPUT'){S.settings[k]=k==='iban'?ibanMask(t):t.value;if(k==='iban')updIbanErr()}});
@@ -3300,7 +3294,7 @@ function openSetup(){
 }
 async function setupFinish(skip){
   if(!setupSh)return;
-  const proj=S.gen.profileType==='project';
+  const proj=S.gen.profileType==='project',wasSub=setupMode==='sub';
   if(!(S.settings.bizName||'').trim()){toast(proj?'Enter a project name':'Enter your business name');const i=$('#u_bizName');if(i)i.focus();return}
   if(!skip){if(proj)S.settings.type='project';else delete S.settings.type}
   if(!skip&&!proj&&!ibanOk(S.settings.iban)){updIbanErr();toast(TT2('Enter a valid IBAN'),4000);const i=$('#u_iban');if(i)i.focus();return}
@@ -3314,7 +3308,8 @@ async function setupFinish(skip){
   closeSheet();
   await saveGen();
   if(!skip)await saveSettings();
-  if(S.tab!=='home')go('home',true);else scheduleRender();
+  if(!skip&&wasSub){S.subPlan=proj?'projects':'business';ACT.subOpen()}
+  else if(S.tab!=='home')go('home',true);else scheduleRender();
   window.scrollTo(0,0);
 }
 function maybeSetup(){if(setupShown||!setupNeeded())return;setupShown=true;setupFresh=true;setTimeout(openSetup,0)}
