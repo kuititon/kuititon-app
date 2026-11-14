@@ -127,3 +127,12 @@ create policy "receipts: own folder, delete" on storage.objects for delete to au
 grant usage on schema public to service_role;
 grant all on public.profiles to service_role;
 grant all on public.docs to service_role;
+
+-- Stripe subscription columns
+alter table public.profiles add column if not exists stripe_customer_id     text;
+alter table public.profiles add column if not exists stripe_subscription_id text;
+alter table public.profiles add column if not exists sub_status             text;
+alter table public.profiles add column if not exists sub_interval           text;
+alter table public.profiles add column if not exists sub_period_end         timestamptz;
+alter table public.profiles add column if not exists sub_cancel_at_end      boolean not null default false;
+create unique index if not exists profiles_stripe_customer_idx on public.profiles (stripe_customer_id) where stripe_customer_id is not null;

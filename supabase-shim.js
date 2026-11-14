@@ -27,7 +27,7 @@
     'Code': 'Koodi', 'Confirm': 'Vahvista', 'Send a new code': 'Lähetä uusi koodi', 'Back': 'Takaisin',
     'Reset password': 'Nollaa salasana', 'Send code': 'Lähetä koodi', 'New password': 'Uusi salasana',
     'Repeat new password': 'Toista uusi salasana', 'Save password': 'Tallenna salasana', 'Cancel': 'Peruuta',
-    'Change password': 'Vaihda salasana', 'Save file': 'Tallenna tiedosto', 'Show password': 'Näytä salasana', 'Hide password': 'Piilota salasana',
+    'Change password': 'Vaihda salasana', 'Save file': 'Tallenna tiedosto', 'Subscription activated.': 'Tilaus on aktivoitu.', 'Payment received. The subscription will activate shortly.': 'Maksu vastaanotettu. Tilaus aktivoituu hetken kuluttua.', 'Show password': 'Näytä salasana', 'Hide password': 'Piilota salasana',
     'Password rules': 'Salasanan vaatimukset',
     'At least 8 characters, a capital letter, a number and a special character.': 'Vähintään 8 merkkiä, iso kirjain, numero ja erikoismerkki.',
     'Passwords do not match.': 'Salasanat eivät täsmää.',
@@ -441,7 +441,49 @@
       m.remove(); window.dispatchEvent(new CustomEvent('kuititon-toast', { detail: t('Password changed.') }));
     };
   }
+  /* ---------- subscription (Stripe) ---------- */
+  async function callFn(name, body) {
+    var ses = (await sb.auth.getSession()).data.session;
+    if (!ses) { var e0 = new Error('signed out'); e0.code = 'unauthorized'; throw e0; }
+    var res = await fetch(CFG.url + '/functions/v1/' + name, {
+      method: 'POST', headers: { 'content-type': 'application/json', 'apikey': CFG.key, 'authorization': 'Bearer ' + ses.access_token },
+      body: JSON.stringify(body || {})
+    });
+    var j = null; try { j = await res.json(); } catch (e) {}
+    if (!res.ok) { var er = new Error((j && j.code) || 'failed'); er.code = (j && j.code) || 'failed'; throw er; }
+    return j || {};
+  }
+  var billing = {
+    info: function () {
+      var p = profile || {};
+      return { plan: p.plan || 'trial', status: p.sub_status || '', interval: p.sub_interval || '',
+        periodEnd: p.sub_period_end ? +new Date(p.sub_period_end) : 0, cancelAtEnd: !!p.sub_cancel_at_end,
+        hasCustomer: !!p.stripe_customer_id, hasSubscription: !!p.stripe_subscription_id };
+    },
+    checkout: async function (plan, interval) { var j = await callFn('stripe-checkout', { plan: plan, interval: interval, lang: fi() ? 'fi' : 'en' }); if (j.url) location.href = j.url; return j; },
+    portal: async function () { var j = await callFn('stripe-portal', {}); if (j.url) location.href = j.url; return j; }
+  };
+  /* back from Stripe Checkout: wait for the webhook to switch the plan, then reload so the whole app picks it up */
+  (function afterCheckout() {
+    var q = new URLSearchParams(location.search), c = q.get('checkout');
+    try { if (c) sessionStorage.setItem('kuititon-checkout', c); else c = sessionStorage.getItem('kuititon-checkout'); } catch (e) {}
+    try { if (sessionStorage.getItem('kuititon-sub-ok')) { sessionStorage.removeItem('kuititon-sub-ok'); setTimeout(function () { window.dispatchEvent(new CustomEvent('kuititon-toast', { detail: t('Subscription activated.') })); }, 1500); } } catch (e) {}
+    if (!c) return;
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+    if (c !== 'success') { try { sessionStorage.removeItem('kuititon-checkout'); } catch (e) {} return; }
+    authReady.then(async function () {
+      try { sessionStorage.removeItem('kuititon-checkout'); } catch (e) {}
+      var before = (profile && profile.plan) || 'trial';
+      for (var n = 0; n < 15; n++) {
+        await loadProfile();
+        if (profile && profile.plan !== before) { try { sessionStorage.setItem('kuititon-sub-ok', '1'); } catch (e) {} location.reload(); return; }
+        await new Promise(function (r) { setTimeout(r, 2000); });
+      }
+      window.dispatchEvent(new CustomEvent('kuititon-toast', { detail: t('Payment received. The subscription will activate shortly.') }));
+    });
+  })();
   window.kuititon = {
+    billing: billing,
     signOut: function () { return sb.auth.signOut(); },
     changePassword: changePassword,
     user: function () { var u = (session && session.user) || {}; return { name: (u.user_metadata && u.user_metadata.full_name) || '', email: u.email || '' }; },

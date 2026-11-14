@@ -999,7 +999,7 @@ const acctBlockMsg=type=>S.gen.sub==='project'&&type!=='project'?L('kuititon for
 function trialBanner(){
   if(projOnlyLock())return '<div class="notice" data-notr>'+trialEndMsg()+'</div>';
   if(!trialOn())return '';
-  if(trialOver())return '<div class="notice" data-notr>'+L('Your free trial has ended. Activate your subscription to unlock full functionality.','Ilmainen kokeilujaksosi on päättynyt. Aktivoi tilauksesi saadaksesi täydet toiminnallisuudet käyttöösi.')+'</div>';
+  if(trialOver())return '<div class="notice" data-notr>'+L('Your free trial has ended. Activate your subscription to unlock full functionality.','Ilmainen kokeilujaksosi on päättynyt. Aktivoi tilauksesi saadaksesi täydet toiminnallisuudet käyttöösi.')+'<div class="actions" style="margin-top:8px"><button class="btn primary sm" data-act="subOpen">'+L('Choose subscription','Valitse tilaus')+'</button></div></div>';
   const d=trialLeft(),inv=!isProj();
   return '<div class="notice info" data-notr>'+L('Free trial: '+d+(d===1?' day':' days')+' left. Receipt scans '+trialScans()+'/'+TRIAL_SCANS+(inv?', invoices '+trialInvs()+'/'+TRIAL_INVS:'')+'.','Ilmainen kokeilu: '+d+(d===1?' päivä':' päivää')+' jäljellä. Kuittien skannaukset '+trialScans()+'/'+TRIAL_SCANS+(inv?', laskut '+trialInvs()+'/'+TRIAL_INVS:'')+'.')+'</div>';
 }
@@ -1564,6 +1564,32 @@ function viewSettings(){
   ${S.acct?`<button class="btn danger" data-act="acctDelete" style="width:100%;margin-top:28px">${TRASH_ICON}Delete account</button>`:''}`;
 }
 const TRASH_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+const SUB_PRICES={business:{month:'7,90',year:'79'},projects:{month:'3,90',year:'39'}};
+function subSection(){
+  const B=window.kuititon&&window.kuititon.billing;if(!B)return '';
+  const i=B.info(),iv=S.subInt||'year';
+  const dt=ms=>ms?dateFi(new Date(ms).toISOString().slice(0,10)):'';
+  const planName=p=>p==='projects'?L('kuititon for Projects','kuititon Projekteille'):L('kuititon for Business','kuititon Yrittäjille');
+  const per=v=>v==='year'?L('year','vuosi'):L('month','kuukausi');
+  let st='',btn='';
+  if(S.gen.sub){
+    const p=S.gen.sub==='project'?'projects':'business';
+    if(i.hasSubscription){
+      st=`<div class="notice info"><b>${planName(p)}</b> · ${i.interval==='year'?L('yearly','vuosilasku'):L('monthly','kuukausilasku')}<br>${i.cancelAtEnd?L('Subscription ends on '+dt(i.periodEnd)+'.','Tilaus päättyy '+dt(i.periodEnd)+'.'):L('Renews on '+dt(i.periodEnd)+'.','Uusiutuu '+dt(i.periodEnd)+'.')}</div>`;
+      btn=`<div class="actions"><button class="btn primary" data-act="subPortal">${L('Manage subscription','Hallinnoi tilausta')}</button></div><span class="small muted">${L('Change plan, cancel, update your card and download receipts.','Vaihda tilausta, peruuta, päivitä maksukortti ja lataa kuitit.')}</span>`;
+    }else{
+      st=`<div class="notice info"><b>${planName(p)}</b><br>${L('Full access is active free of charge.','Täysi käyttöoikeus on käytössä maksutta.')}</div>`;
+    }
+  }else{
+    st=`<div class="notice${trialOver()?'':' info'}">${trialOver()?L('Your free trial has ended. Choose a subscription to continue.','Ilmainen kokeilujaksosi on päättynyt. Valitse tilaus jatkaaksesi.'):L('Free trial: '+trialLeft()+(trialLeft()===1?' day':' days')+' left.','Ilmainen kokeilu: '+trialLeft()+(trialLeft()===1?' päivä':' päivää')+' jäljellä.')}</div>`;
+    const card=(p,desc)=>`<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><b>${planName(p)}</b><span><b>${SUB_PRICES[p][iv]} €</b> / ${per(iv)}</span></div><div class="small muted" style="margin:4px 0 10px">${desc} · ${L('VAT included','sis. ALV')}</div><button class="btn primary" style="width:100%" data-act="subCheckout" data-plan="${p}">${L('Start subscription','Aloita tilaus')}</button></div>`;
+    btn=`<div class="chips" style="margin:0 0 10px">${['month','year'].map(v=>`<button type="button" class="chip" data-act="subInt" data-v="${v}" aria-pressed="${iv===v}">${v==='year'?L('Yearly (2 months free)','Vuosi (2 kk ilmaiseksi)'):L('Monthly','Kuukausi')}</button>`).join('')}</div>`
+      +card('business',L('1 business and 3 projects','1 yritys ja 3 projektia'))+card('projects',L('3 projects','3 projektia'))
+      +(i.hasCustomer?`<div class="actions"><button class="btn" data-act="subPortal">${L('Payment history and card','Maksuhistoria ja maksukortti')}</button></div>`:'')
+      +`<span class="small muted">${L('Payment is handled securely by Stripe. You can cancel any time.','Maksun käsittelee turvallisesti Stripe. Voit peruuttaa milloin tahansa.')}</span>`;
+  }
+  return `<h2 id="subSec">${L('Subscription','Tilaus')}</h2><div data-notr>${st}${btn}</div>`;
+}
 function viewGeneral(){
   const g=S.gen,cats=catList();
   const mock=t=>`<span class="tm ${t}"><i class="a"></i><i class="b"></i><i class="c"></i><i class="d"></i></span>`;
@@ -1576,6 +1602,7 @@ function viewGeneral(){
   <div class="f"><span class="lab">Theme</span><div class="themes" role="radiogroup" aria-label="Theme">${pick('light','Light',mock('lt'))}${pick('dark','Dark',mock('dk'))}${pick('auto','System',mock('lt')+'<span class="half">'+mock('dk')+'</span>')}</div><span class="small muted">System follows your phone's appearance setting.</span></div>
   ${isProj()?'':`  <h2>Customize</h2>
   <ul class="ledger navlist"><li><button class="navrow" data-act="openSub" data-id="cats"><span>Categories</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button></li><li><button class="navrow" data-act="openSub" data-id="units"><span>Units</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button></li></ul>`}
+  ${subSection()}
   <h2>Profile</h2>
   <div class="f"><label for="g_name">Full name</label><input id="g_name" data-g="fullName" data-pname autocapitalize="words" value="${esc(g.fullName||'')}" autocomplete="name" placeholder="First and last name"></div>
   <div class="f"><label for="g_email">Email</label><input id="g_email" data-g="email" type="email" inputmode="email" value="${esc(g.email||'')}" autocomplete="email" placeholder="you@example.com"><span class="small muted">Your sign-in details. When the app is released, your email will be confirmed when you register.</span></div>
@@ -2926,6 +2953,11 @@ const ACT={
 };
 ['newRec','newCli','budEdit','pdf','mSelMode','mSelDel','mSelDl','pkgDl','csvInv','csvRec'].forEach(k=>{const f=ACT[k];if(f)ACT[k]=(...a)=>{if(trialStop())return;return f(...a)}});
 ACT.trialTest=a=>{const v=a.dataset.v,g=S.gen;delete g.sub;if(v==='business')g.sub='account';else if(v==='projects')g.sub='project';else if(v==='none'){g.trialStart=Date.now()-(TRIAL_DAYS+1)*864e5}else{g.trialStart=Date.now();g.trialScans=0;g.trialInvIds=[]}saveGen();render();toast(L('Subscription status changed','Tilauksen tila vaihdettu'))};
+ACT.subInt=a=>{S.subInt=a.dataset.v;scheduleRender()};
+ACT.subOpen=()=>{go('general');setTimeout(()=>{const e=document.getElementById('subSec');if(e)e.scrollIntoView({block:'start'})},250)};
+const subErr=e=>{const c=e&&e.code;toast(c==='not_configured'?L('Payments are not available yet.','Maksut eivät ole vielä käytössä.'):c==='already_subscribed'?L('You already have a subscription. Use Manage subscription.','Sinulla on jo tilaus. Käytä Hallinnoi tilausta -painiketta.'):L('Could not open the payment page. Try again.','Maksusivun avaaminen epäonnistui. Yritä uudelleen.'),5000)};
+ACT.subCheckout=async a=>{const B=window.kuititon&&window.kuititon.billing;if(!B||a.disabled)return;a.disabled=true;try{await B.checkout(a.dataset.plan,S.subInt||'year')}catch(e){a.disabled=false;subErr(e)}};
+ACT.subPortal=async a=>{const B=window.kuititon&&window.kuititon.billing;if(!B||a.disabled)return;a.disabled=true;try{await B.portal()}catch(e){a.disabled=false;subErr(e)}};
 document.addEventListener('click',e=>{
   if(e.target.closest('.sheet'))return; /* sheets handle their own clicks */
   const a=e.target.closest('[data-act]');if(!a)return;
