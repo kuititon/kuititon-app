@@ -147,7 +147,7 @@
         ui.busy = false;
       } else if (f === 'register') {
         ui.name = $v('ka_name').trim(); ui.email = $v('ka_email').trim(); var p1 = $v('ka_pw');
-        if (!ui.name) { ui.err = t('Enter your full name.'); return draw(); }
+        if (ui.name.length < 2) { ui.err = t('Enter your full name.'); return draw(); }
         if (!emailOk(ui.email)) { ui.err = t('Enter a valid email.'); return draw(); }
         if (!pwOk(p1)) { ui.err = t('At least 8 characters, a capital letter, a number and a special character.'); return draw(); }
         busy(true); var r2 = await sb.auth.signUp({ email: ui.email, password: p1, options: { data: { full_name: ui.name } } });
