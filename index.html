@@ -580,6 +580,17 @@ button.slide-vat{display:flex;width:100%;background:none;border-width:1px 0 0;bo
 .vatc .l{font-size:14px;color:var(--muted)}
 .vatc .v{font-size:28px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin:2px 0 4px}
 .vatc .s{font-size:13px;color:var(--muted)}
+.plpicks{display:flex;flex-direction:column;gap:8px}
+.plpick{appearance:none;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;width:100%;min-height:52px;cursor:pointer}
+.plpick[aria-checked=true]{border-color:var(--ink);background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.plpick:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pldot{flex:0 0 20px;height:20px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center}
+.plpick[aria-checked=true] .pldot{border-color:var(--ink)}
+.plpick[aria-checked=true] .pldot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.plt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.plt span:not(.plbadge){font-size:13px;color:var(--muted)}
+.plp{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.plbadge{display:inline-block;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:12px;padding:2px 8px;border-radius:99px;margin-left:4px;white-space:nowrap}
 </style>
 
 <div class="wrap"><div id="acctbar"></div><div id="app"></div></div>
@@ -1580,13 +1591,13 @@ function viewSettings(){
   ${S.acct?`<button class="btn danger" data-act="acctDelete" style="width:100%;margin-top:28px">${TRASH_ICON}Delete account</button>`:''}`;
 }
 const TRASH_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
-const SUB_PRICES={business:{month:'7,90',year:'79'},projects:{month:'3,90',year:'39'}};
+const SUB_PRICES={business:{month:'7,90',year:'79',perMonth:'6,58',save:'15,80'},projects:{month:'3,90',year:'39',perMonth:'3,25',save:'7,80'}};
+S.subIv={business:'year',projects:'year'};
 function subSection(){
   const B=window.kuititon&&window.kuititon.billing;if(!B)return '';
-  const i=B.info(),iv=S.subInt||'year';
+  const i=B.info();
   const dt=ms=>ms?dateFi(new Date(ms).toISOString().slice(0,10)):'';
   const planName=p=>p==='projects'?L('kuititon for Projects','kuititon Projekteille'):L('kuititon for Business','kuititon Yrittäjille');
-  const per=v=>v==='year'?L('year','vuosi'):L('month','kuukausi');
   let st='',btn='';
   if(S.gen.sub){
     const p=S.gen.sub==='project'?'projects':'business';
@@ -1598,8 +1609,9 @@ function subSection(){
     }
   }else{
     st=`<div class="notice${trialOver()?'':' info'}">${trialOver()?L('Your free trial has ended. Choose a subscription to continue.','Ilmainen kokeilujaksosi on päättynyt. Valitse tilaus jatkaaksesi.'):L('Free trial: '+trialLeft()+(trialLeft()===1?' day':' days')+' left.','Ilmainen kokeilu: '+trialLeft()+(trialLeft()===1?' päivä':' päivää')+' jäljellä.')}</div>`;
-    const card=(p,desc)=>`<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><b>${planName(p)}</b><span><b>${SUB_PRICES[p][iv]} €</b> / ${per(iv)}</span></div><div class="small muted" style="margin:4px 0 10px">${desc} · ${L('VAT included','sis. ALV')}</div><button class="btn primary" style="width:100%" data-act="subCheckout" data-plan="${p}">${L('Start subscription','Aloita tilaus')}</button></div>`;
-    btn=`<div class="chips" style="margin:0 0 10px">${['month','year'].map(v=>`<button type="button" class="chip" data-act="subInt" data-v="${v}" aria-pressed="${iv===v}">${v==='year'?L('Yearly (2 months free)','Vuosi (2 kk ilmaiseksi)'):L('Monthly','Kuukausi')}</button>`).join('')}</div>`
+    const pk=(p,v)=>{const P=SUB_PRICES[p],on=S.subIv[p]===v,y=v==='year';return `<button type="button" class="plpick" role="radio" aria-checked="${on}" data-act="subInt" data-plan="${p}" data-v="${v}"><span class="pldot" aria-hidden="true"></span><span class="plt"><b>${y?L('Year','Vuosi'):L('Month','Kuukausi')}${y?` <span class="plbadge">${L('Save '+P.save+' €','Säästät '+P.save+' €')}</span>`:''}</b>${y?`<span>${L('that is '+P.perMonth+' € / month','eli '+P.perMonth+' € / kk')}</span>`:''}</span><span class="plp">${y?P.year+' € / '+L('yr','v'):P.month+' € / '+L('mo','kk')}</span></button>`};
+    const card=(p,desc)=>`<div class="card" style="margin-bottom:10px"><b>${planName(p)}</b><div class="small muted" style="margin:4px 0 10px">${desc} · ${L('VAT included','sis. ALV')}</div><div class="plpicks" role="radiogroup" aria-label="${planName(p)}">${pk(p,'month')}${pk(p,'year')}</div><button class="btn primary" style="width:100%;margin-top:10px" data-act="subCheckout" data-plan="${p}">${L('Start subscription','Aloita tilaus')}</button></div>`;
+    btn=''
       +card('business',L('1 business and 3 projects','1 yritys ja 3 projektia'))+card('projects',L('3 projects','3 projektia'))
       +(i.hasCustomer?`<div class="actions"><button class="btn" data-act="subPortal">${L('Payment history and card','Maksuhistoria ja maksukortti')}</button></div>`:'')
       +`<span class="small muted">${L('Payment is handled securely by Stripe. You can cancel any time.','Maksun käsittelee turvallisesti Stripe. Voit peruuttaa milloin tahansa.')}</span>`;
@@ -2972,10 +2984,10 @@ const ACT={
 };
 ['newRec','newCli','budEdit','pdf','mSelMode','mSelDel','mSelDl','pkgDl','csvInv','csvRec'].forEach(k=>{const f=ACT[k];if(f)ACT[k]=(...a)=>{if(trialStop())return;return f(...a)}});
 ACT.trialTest=async a=>{const v=a.dataset.v;try{await window.kuititon.setPlan(v);if(v==='trial'){S.gen.trialInvIds=[];saveGen()}render();toast(L('Subscription status changed','Tilauksen tila vaihdettu'))}catch(e){toast(L('Could not change status','Tilan vaihto epäonnistui'),4000)}};
-ACT.subInt=a=>{S.subInt=a.dataset.v;scheduleRender()};
+ACT.subInt=a=>{S.subIv[a.dataset.plan]=a.dataset.v;scheduleRender()};
 ACT.subOpen=()=>{go('general');setTimeout(()=>{const e=document.getElementById('subSec');if(e)e.scrollIntoView({block:'start'})},250)};
 const subErr=e=>{const c=e&&e.code;toast(c==='not_configured'?L('Payments are not available yet.','Maksut eivät ole vielä käytössä.'):c==='already_subscribed'?L('You already have a subscription. Use Manage subscription.','Sinulla on jo tilaus. Käytä Hallinnoi tilausta -painiketta.'):L('Could not open the payment page. Try again.','Maksusivun avaaminen epäonnistui. Yritä uudelleen.'),5000)};
-ACT.subCheckout=async a=>{const B=window.kuititon&&window.kuititon.billing;if(!B||a.disabled)return;a.disabled=true;try{await B.checkout(a.dataset.plan,S.subInt||'year')}catch(e){a.disabled=false;subErr(e)}};
+ACT.subCheckout=async a=>{const B=window.kuititon&&window.kuititon.billing;if(!B||a.disabled)return;a.disabled=true;try{await B.checkout(a.dataset.plan,S.subIv[a.dataset.plan]||'year')}catch(e){a.disabled=false;subErr(e)}};
 ACT.subPortal=async a=>{const B=window.kuititon&&window.kuititon.billing;if(!B||a.disabled)return;a.disabled=true;try{await B.portal()}catch(e){a.disabled=false;subErr(e)}};
 document.addEventListener('click',e=>{
   if(e.target.closest('.sheet'))return; /* sheets handle their own clicks */
