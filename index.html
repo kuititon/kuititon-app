@@ -3298,7 +3298,7 @@ function setupRefresh(){
   const stt=setupTitles[setupStep];const h=sh.el.querySelector('.sheet-top h3');if(h)h.textContent=isFi()?TT(stt):stt;
   const b=sh.el.querySelector('.sheet-top .back');if(b)b.style.visibility=setupStep===0?'hidden':'visible';
   if(isFi())xlNode(sh.el);
-  suFit(sh.el);
+  suFit(sh.el);placeSeg(null,sh.el);
   sh.el.querySelector('.sheet-body').scrollTop=0;
 }
 function setupNext(){
