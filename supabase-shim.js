@@ -27,7 +27,7 @@
     'Code': 'Koodi', 'Confirm': 'Vahvista', 'Send a new code': 'Lähetä uusi koodi', 'Back': 'Takaisin',
     'Reset password': 'Nollaa salasana', 'Send code': 'Lähetä koodi', 'New password': 'Uusi salasana',
     'Repeat new password': 'Toista uusi salasana', 'Save password': 'Tallenna salasana', 'Cancel': 'Peruuta',
-    'Change password': 'Vaihda salasana', 'Show password': 'Näytä salasana', 'Hide password': 'Piilota salasana',
+    'Change password': 'Vaihda salasana', 'Save file': 'Tallenna tiedosto', 'Show password': 'Näytä salasana', 'Hide password': 'Piilota salasana',
     'Password rules': 'Salasanan vaatimukset',
     'At least 8 characters, a capital letter, a number and a special character.': 'Vähintään 8 merkkiä, iso kirjain, numero ja erikoismerkki.',
     'Passwords do not match.': 'Salasanat eivät täsmää.',
@@ -392,6 +392,32 @@
   var downloads = {
     async save(o) {
       var d = o.data, blob = d instanceof Blob ? d : new Blob([d]);
+      /* iPhone/iPad: a plain download only opens the file in a viewer. Hand the file to the share sheet instead
+         ("Save to Files", AirDrop, Mail ...). It receives the file only, with no link. */
+      var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (ios && navigator.share && window.File) {
+        var f;
+        try {
+          f = new File([blob], o.filename, { type: blob.type || (/\.pdf$/i.test(o.filename) ? 'application/pdf' : 'application/octet-stream') });
+          if (!navigator.canShare || navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return { status: 'saved' }; }
+        } catch (e) {
+          if (e && e.name === 'AbortError') return { status: 'cancelled' };
+          if (e && e.name === 'NotAllowedError' && f) { /* the tap was too long ago (slow PDF): ask for one more tap */
+            css();
+            return new Promise(function (res) {
+              var m = document.createElement('div'); m.id = 'kmodal';
+              m.innerHTML = '<div class="kbox"><h3>' + esc(o.filename) + '</h3><div class="krow"><button type="button" data-x>' + t('Cancel') + '</button><button type="button" class="kp" data-s>' + t('Save file') + '</button></div></div>';
+              document.body.appendChild(m);
+              m.querySelector('[data-x]').onclick = function () { m.remove(); res({ status: 'cancelled' }); };
+              m.querySelector('[data-s]').onclick = async function () {
+                try { await navigator.share({ files: [f] }); res({ status: 'saved' }); } catch (e2) { res({ status: 'cancelled' }); }
+                m.remove();
+              };
+            });
+          }
+          /* otherwise fall back to a normal download */
+        }
+      }
       var a = document.createElement('a'), u = URL.createObjectURL(blob);
       a.href = u; a.download = o.filename; a.style.display = 'none'; document.body.appendChild(a); a.click();
       setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 4000);
