@@ -640,7 +640,7 @@ const DEF={bizName:'',bizId:'',vatNo:'',street:'',zip:'',city:'',email:'',phone:
 /* ---------- state ---------- */
 const S={acct:'main',accounts:[{id:'main',name:''}],settings:{...DEF},clients:[],invoices:[],receipts:[],tab:'home',filter:{inv:'all',rec:'open',cli:'all'},q:{inv:'',rec:'',cli:''},sort:{inv:'new',rec:'new',cli:'az'},queue:[],ocr:false,loaded:false,slow:false,mode:'wait'};
 try{S.homeRange=localStorage.getItem('innotate-range')==='month'?'month':'year'}catch(e){S.homeRange='year'}
-try{S.period=localStorage.getItem('innotate-period')||(S.homeRange==='month'?'m:'+todayStr().slice(0,7):'ytd')}catch(e){S.period='ytd'}
+S.period='ytd';try{localStorage.removeItem('innotate-period')}catch(e){} /* the period is not remembered: every full open starts on the current year */
 S.periodOpen=false;
 const H={db:null,assets:null,sample:null,dl:null};
 const LS='innotate-books-v1';
@@ -2825,9 +2825,9 @@ const ACT={
   pSeg:()=>{const old=segGeo(),cm=todayStr().slice(0,7),cyr=+cm.slice(0,4);
     if(/^m:/.test(S.period||'')){const y=+S.period.slice(2,6);S.lastM=S.period;S.period=y===cyr?'ytd':'y:'+y}
     else{const ly=/^y:(\d{4})$/.exec(S.period||''),y=ly?+ly[1]:cyr;S.lastY=S.period;S.period=S.lastM&&+S.lastM.slice(2,6)===y?S.lastM:(y===cyr?'m:'+cm:'m:'+y+'-12')}
-    S.periodOpen=false;try{localStorage.setItem('innotate-period',S.period)}catch(e){}render();placeSeg(old)},
+    S.periodOpen=false;render();placeSeg(old)},
   periodOpen:()=>{S.periodOpen=!S.periodOpen;render();if(S.periodOpen){const m=document.querySelector('.pmenu .prow[aria-selected=true]'),pn=document.querySelector('.pmenu');if(m&&pn){const y=m.getBoundingClientRect().top-pn.getBoundingClientRect().top+pn.scrollTop-pn.clientHeight/2;if(y>0)pn.scrollTop=y}}},
-  period:a=>{S.period=a.dataset.id;if(/^m:/.test(S.period))S.lastM=S.period;else S.lastY=S.period;S.periodOpen=false;try{localStorage.setItem('innotate-period',S.period)}catch(e){}render()},
+  period:a=>{S.period=a.dataset.id;if(/^m:/.test(S.period))S.lastM=S.period;else S.lastY=S.period;S.periodOpen=false;render()},
   recFilter:a=>{S.filter.rec=a.dataset.id;S.recPick=true;render()},
   cam:()=>{if(trialStop()||trialFull('scan'))return;$('#camIn').click()},
   imp:()=>{if(trialStop()||trialFull('scan'))return;$('#impIn').click()},
