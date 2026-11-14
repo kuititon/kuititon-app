@@ -675,7 +675,20 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const todayStr=()=>iso(new Date());
 const addDays=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+(+n||0));return iso(d)};
 const splitInfo=r=>{if(!r.splitId)return null;const g=S.receipts.filter(x=>x.splitId===r.splitId).sort((a,b)=>(a.splitIdx||1)-(b.splitIdx||1)||(a.createdAt||0)-(b.createdAt||0));return g.length<2?null:{k:g.findIndex(x=>x.id===r.id)+1,n:g.length,g}};
-const addYearsISO=(iso,n)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');if(!m)return '';const y=+m[1]+n,mo=+m[2],last=new Date(y,mo,0).getDate();return y+'-'+m[2]+'-'+String(Math.min(+m[3],last)).padStart(2,'0')};
+
+/* totals of a record follow its rows; rows left out of expenses still count towards the receipt total */
+const recSum=rec=>{const it=rec.items||[];rec.total=it.reduce((t,x)=>t+(x.total||0),0);rec.vat=it.reduce((t,x)=>t+vatFrom(x.total||0,+x.vatRate||0),0);const m=it.slice().sort((a,b)=>(b.total||0)-(a.total||0))[0];if(m)rec.vatRate=+m.vatRate||0;return rec};
+/* when split parts are deleted their rows go back to a remaining part, as rows that do not count, so nothing is lost */
+function rowsBack(gone){
+  const ids=new Set(gone.map(x=>x.id)),out=new Map();
+  for(const g of gone){if(!g.splitId)continue;
+    const rem=S.receipts.filter(x=>x.splitId===g.splitId&&!ids.has(x.id)).sort((a,b)=>(a.splitIdx||1)-(b.splitIdx||1));
+    if(!rem.length)continue;
+    const tid=rem[0].id,t=out.get(tid)||{before:clone(rem[0]),after:clone(rem[0])};
+    t.after.items=(t.after.items||[]).concat((g.items||[]).map(x=>({...clone(x),id:uid(),incl:false})));
+    out.set(tid,t)}
+  return [...out.values()].map(t=>({before:t.before,after:recSum(t.after)}));
+}const addYearsISO=(iso,n)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');if(!m)return '';const y=+m[1]+n,mo=+m[2],last=new Date(y,mo,0).getDate();return y+'-'+m[2]+'-'+String(Math.min(+m[3],last)).padStart(2,'0')};
 const warrExpired=r=>!!(r.warrantyEnd&&r.warrantyEnd<todayStr());
 const dateFi=s=>{if(!s||!/^\d{4}-\d{2}-\d{2}$/.test(s))return '';const[p,q,r]=s.split('-');return r+'.'+q+'.'+p};
 const eur=new Intl.NumberFormat('fi-FI',{style:'currency',currency:'EUR'});
@@ -2235,13 +2248,16 @@ function openReceipt(id,isNewObj){
   if(!base)return;
   const r=clone(base);
   if(!r.items||!r.items.length)r.items=[{id:uid(),desc:'',total:r.total||0,vatRate:+r.vatRate||(+S.settings.defVat||25.5),incl:true}];
-  const r0=JSON.stringify(r);
+  let r0=JSON.stringify(r);
   const isNew=!!isNewObj;let vatManual=!!(r.vat);let ask=null;let billMode=!!r.clientId;let itEdit=isNew||r.status==='review';
   const PEN_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',CHECK_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   const cliOpts=()=>`<option value="">Choose client…</option>`+S.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,'fi')).map(c=>`<option value="${c.id}" ${c.id===r.clientId?'selected':''}>${esc(c.name)}</option>`).join('');
   const itSumText=()=>{const e=recExp(r),ex=(r.total||0)-e.gross;return 'Counted as expense: '+money(e.gross)+' (VAT '+money(e.vat)+')'+(ex>0?' · Left out: '+money(ex):'')};
   const splitBtn=()=>(!isNew&&!r.billedInvoiceId&&(r.items||[]).length>=2)?`<div class="actions" style="margin-top:10px"><button class="btn" data-act="recSplit">${L('Split by category','Jaa kategorioihin')}</button></div>`:'';
-  const splitNote=()=>{const sp=splitInfo(r);if(!sp)return '';return `<div class="splnote"><div>${L('This receipt is part '+sp.k+' of '+sp.n+' of a split receipt.','Tämä kuitti on osa '+sp.k+'/'+sp.n+' jaetusta kuitista.')}</div>${sp.g.filter(x=>x.id!==r.id).map(x=>`<button type="button" class="btn sm" data-act="recSib" data-id="${esc(x.id)}">${esc(catName(x.category))} · ${money(x.total)}</button>`).join('')}</div>`};
+  const splitNote=()=>{const sp=splitInfo(r);if(!sp)return '';return `<div class="splnote"><div>${L('This receipt is part '+sp.k+' of '+sp.n+' of a split receipt.'+(r.imageId?' The file below is the full original receipt.':''),'Tämä kuitti on osa '+sp.k+'/'+sp.n+' jaetusta kuitista.'+(r.imageId?' Alla oleva tiedosto on koko alkuperäinen kuitti.':''))}</div>${sp.g.filter(x=>x.id!==r.id).map(x=>`<button type="button" class="btn sm" data-act="recSib" data-id="${esc(x.id)}">${esc(catName(x.category))} · ${money(x.total)}</button>`).join('')}</div>`};
+  const otherRows=()=>{const sp=splitInfo(r);if(!sp||r.billedInvoiceId)return '';
+    const rows=sp.g.filter(x=>x.id!==r.id).flatMap(sb=>(sb.items||[]).map((x,i)=>({sb,i,x})));if(!rows.length)return '';
+    return `<div class="f"><span class="lab">${L('Rows in the other part','Rivit toisessa osassa')}</span><div class="itfold">${rows.map(({sb,i,x})=>`<div class="line done"><div class="dn"><div class="dt">${esc((x.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted">${esc(catName(sb.category))} · ${fmtRate(+x.vatRate||0)} % ${L('VAT','ALV')}</div></div><div class="mono dam">${money(x.total||0)}</div></div><button type="button" class="btn sm" data-act="rowHere" data-s="${esc(sb.id)}" data-i="${i}">${L('Move here','Siirrä tähän')}</button></div>`).join('')}</div></div>`};
   const itemsHtml=()=>{
     const it=r.items||[];
     if(!it.length)return `<div class="f"><span class="lab">Items</span><div class="actions"><button class="btn sm" data-act="itAdd">Add item</button></div></div>`;
@@ -2314,7 +2330,7 @@ function openReceipt(id,isNewObj){
       <div class="f"><label for="r_rate">VAT rate</label><select id="r_rate" data-r="vatRate">${VATS.map(v=>`<option value="${v}" ${+r.vatRate===v?'selected':''}>${fmtRate(v)} %</option>`).join('')}</select></div>
       <div class="f"><label for="r_vat">VAT amount (€)</label><input id="r_vat" data-r="vat" inputmode="decimal" value="${esc(inputMoney(r.vat))}" placeholder="0,00"></div>
     </div>
-    ${itemsHtml()}
+    ${itemsHtml()}${otherRows()}
     <div class="f cwrap"><label for="r_catbtn">Category</label><button type="button" class="selbtn" id="r_catbtn" data-act="ctOpen" aria-haspopup="listbox" aria-expanded="${ctOpen}"><span>${esc(CATS[ctKey()])}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div id="ctBox">${ctOpen?ctPanel():''}</div></div>
     ${isProj()?'':`<div class="f"><span class="lab">Expense type</span><div class="list"><label class="pick"><input type="radio" name="r_kind" value="own" data-r="kind" ${billMode?'':'checked'}><span>Own expense</span></label><label class="pick"><input type="radio" name="r_kind" value="bill" data-r="kind" ${billMode?'checked':''}><span>Billable to client</span></label></div></div>`}
     ${billMode||isProj()?`<div class="f cwrap"><label for="r_client">${cw('Client','Contractor (optional)')}</label><button type="button" class="selbtn" id="r_client" data-act="rcOpen" aria-haspopup="listbox" aria-expanded="${rcOpen}"><span class="${client(r.clientId)?'':'muted'}">${esc((client(r.clientId)||{}).name||'Choose…')}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div id="rcBox">${rcOpen?rcPanel():''}</div></div>`:''}
@@ -2410,6 +2426,10 @@ function openReceipt(id,isNewObj){
     if(a.dataset.act==='recSplit'){if(!r.items||r.items.length<2)return;r.items=r.items.filter(x=>(x.desc||'').trim()||x.total);openSplit(r,()=>{closeSheet();go('receipts',true)})}
     if(a.dataset.act==='itEditOn'){itEdit=true;redraw()}
     if(a.dataset.act==='itEditOff'){itEdit=false;redraw()}
+    if(a.dataset.act==='rowHere'){(async()=>{const sb=S.receipts.find(x=>x.id===a.dataset.s);if(!sb||sb.billedInvoiceId)return;const s2=clone(sb),i=+a.dataset.i;if(!s2.items||!s2.items[i])return;const [x]=s2.items.splice(i,1);
+      r.items=r.items||[];r.items.push({...x,incl:true});itRecalc();
+      try{if(s2.items.length)await save('receipts',recSum(s2));else await drop('receipts',s2.id);await save('receipts',r)}catch(err){return}
+      r0=JSON.stringify(r);redraw();commit();toast(L('Row moved','Rivi siirretty'))})();return}
     if(a.dataset.act==='itAdd'){r.items=r.items||[];r.items.push({id:uid(),desc:'',total:0,vatRate:+r.vatRate||(+S.settings.defVat||25.5),incl:true});redraw();commit()}
     if(a.dataset.act==='itDel'){ask={t:'item',i:+a.dataset.i};redraw()}
     if(a.dataset.act==='itDelYes'){commit();r.items.splice(ask.i,1);ask=null;if(r.items.length)itRecalc();redraw();commit()}
@@ -2420,10 +2440,11 @@ function openReceipt(id,isNewObj){
     if(a.dataset.act==='recDel'){ask={t:'rec'};redraw()}
     if(a.dataset.act==='recDelYes'){
       if(r.billedInvoiceId){ask=null;redraw();return}
-      const origRc=clone(S.receipts.find(x=>x.id===r.id)||r);
+      const origRc=clone(S.receipts.find(x=>x.id===r.id)||r),back=rowsBack([origRc]);
+      for(const b of back)await save('receipts',b.after);
       await drop('receipts',r.id);
       closeSheet();
-      offerAction('Receipt deleted','Undo',async()=>{await save('receipts',origRc);toast('Restored')},()=>dropAssets([origRc.imageId,origRc.pdfId]));
+      offerAction(back.length?L('Part deleted. Its rows are kept in the other part, not counted.','Osa poistettu. Sen rivit säilyvät toisessa osassa, ei laskettuna.'):'Receipt deleted','Undo',async()=>{await save('receipts',origRc);for(const b of back)await save('receipts',b.before);toast('Restored')},()=>dropAssets([origRc.imageId,origRc.pdfId]));
     }
   });
 }
@@ -3045,7 +3066,7 @@ const ACT={
     const w=$('#mBulk');if(w)w.remove();const k=SEL.k;let n=0;
     const U={docs:[],mods:[],assets:[]};
     if(k==='inv'){for(const i of S.invoices.filter(x=>SEL.ids.has(x.id))){for(const r of S.receipts.filter(r=>r.billedInvoiceId===i.id)){U.mods.push(['receipts',clone(r)]);await save('receipts',{...r,billedInvoiceId:''})}U.docs.push(['invoices',clone(i)]);await drop('invoices',i.id);n++}}
-    else{for(const x of S.receipts.filter(x=>SEL.ids.has(x.id)&&!x.billedInvoiceId)){U.docs.push(['receipts',clone(x)]);await drop('receipts',x.id);U.assets.push(x.imageId,x.pdfId);n++}}
+    else{const gone=S.receipts.filter(x=>SEL.ids.has(x.id)&&!x.billedInvoiceId);for(const b of rowsBack(gone)){U.mods.push(['receipts',b.before]);await save('receipts',b.after)}for(const x of gone){U.docs.push(['receipts',clone(x)]);await drop('receipts',x.id);U.assets.push(x.imageId,x.pdfId);n++}}
     SEL.k='';SEL.ids.clear();render();
     offerAction(n+(k==='inv'?' invoice':' receipt')+(n===1?'':'s')+' deleted','Undo',async()=>{for(const [c,o] of U.docs)await save(c,o);for(const [c,o] of U.mods)await save(c,o);toast('Restored')},()=>dropAssets(U.assets))},
   qDel:a=>{S.queue=S.queue.filter(x=>x.id!==a.dataset.qid);renderQueue()},
