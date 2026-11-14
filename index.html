@@ -3250,11 +3250,12 @@ let setupSh=null,setupShown=false,setupBackup=null,setupFresh=false;
 const setupNeeded=()=>S.loaded&&S.genLoaded&&S.acct==='main'&&!S.gen.setupDone&&!S.clients.length&&!S.invoices.length&&!S.receipts.length&&!S.settings.iban&&!S.settings.bizId;
 let setupStep=0,setupErr='';
 const setupTitles=['Welcome','Your profile','Choose your plan','Your account'];
-let setupMode='';
+let setupMode='',setupSkip1=false;
 const emailOk=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v||'').trim());
 function setupBody(){
   const s=S.settings,g=S.gen;
-  const dots=`<div class="sudots" aria-label="Step ${setupStep+1} of 4">${[0,1,2,3].map(n=>`<i class="${n<=setupStep?'on':''}"></i>`).join('')}</div>`;
+  const stepsN=setupSkip1?[0,2,3]:[0,1,2,3],stepI=stepsN.indexOf(setupStep);
+  const dots=`<div class="sudots" aria-label="Step ${stepI+1} of ${stepsN.length}">${stepsN.map((n,k)=>`<i class="${k<=stepI?'on':''}"></i>`).join('')}</div>`;
   if(setupStep===0){
     const cur=isFi()?'fi':'en',names={en:'English',fi:'Suomi'};
     const opt=(v)=>`<button type="button" role="option" class="sulang${cur===v?' on':''}" data-act="setupLang" data-v="${v}" aria-selected="${cur===v}" data-notr>${names[v]}</button>`;
@@ -3308,7 +3309,7 @@ function setupRefresh(){
   sh.el.querySelector('.sheet-body').scrollTop=0;
 }
 function setupNext(){
-  if(setupStep===0){setupStep=1;setupErr='';setupRefresh();return}
+  if(setupStep===0){setupStep=setupSkip1?2:1;setupErr='';setupRefresh();return}
   if(setupStep===1){
     const g=S.gen;
     if((g.fullName||'').trim().length<2){setupErr=TT2('Enter your full name');setupRefresh();return}
@@ -3329,11 +3330,12 @@ function openSetup(){
   if(S.settings.bizName===DEF.bizName)S.settings.bizName='';
   if(S.settings.web===DEF.web)S.settings.web='';
   setupStep=0;setupErr='';setupMode='';
+  setupSkip1=(S.gen.fullName||'').trim().length>=2&&(adminOn()||emailOk(S.gen.email));
   const sh=openSheet('Welcome',setupBody,{live:false});
   setupSh=sh;document.body.classList.add('in-setup');
   const b=sh.el.querySelector('.sheet-top .back');if(b)b.style.visibility='hidden';
   suFit(sh.el);
-  sh.guard=()=>{if(setupStep>0){setupStep--;setupErr='';setupRefresh()}return true};
+  sh.guard=()=>{if(setupStep>0){setupStep=(setupStep===2&&setupSkip1)?0:setupStep-1;setupErr='';setupRefresh()}return true};
   sh.el.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
     if(k==='setupDd'){const d=a.closest('.sudd');const o=d.classList.toggle('open');a.setAttribute('aria-expanded',o);return}
     if(k==='setupLang'){const d=a.closest('.sudd');if(d)d.classList.remove('open');if(S.gen.ui===a.dataset.v){return}S.gen.ui=a.dataset.v;saveGen();fadeLang(()=>{applyLang();setupRefresh()});return}
