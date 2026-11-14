@@ -724,7 +724,7 @@ const FI={
 'Optional, printed on the invoice':'Valinnainen, tulostetaan laskulle','Only for you, not shown on the invoice':'Vain sinulle, ei näy laskulla','e.g. Koivukuja 4, ventilation plan':'esim. Koivukuja 4, ilmanvaihtosuunnitelma',
 'This is the first invoice in this account. Set the number if you have invoiced before. Later invoices continue numbering automatically.':'Tämä on tilin ensimmäinen lasku. Aseta numero, jos olet laskuttanut aiemmin. Seuraavat laskut jatkavat numerointia automaattisesti.',
 'Lines':'Rivit','Add line':'Lisää rivi','Add receipts':'Lisää kuitteja','Totals':'Yhteensä','Preview':'Esikatsele','Save invoice':'Tallenna lasku','Undo':'Kumoa','Redo':'Tee uudelleen',
-'Quantity':'Määrä','Unit':'Yksikkö','Unit price excl. VAT (€)':'Yksikköhinta ilman ALV:ia (€)','What was done or supplied':'Mitä tehtiin tai toimitettiin',
+'Quantity':'Määrä','Unit':'Yksikkö','Unit price (€)':'Yksikköhinta (€)','What was done or supplied':'Mitä tehtiin tai toimitettiin',
 'Total before VAT':'Yhteensä ilman ALV:ia','Done editing line':'Valmis',
 'Choose a client first.':'Valitse ensin asiakas.','No unbilled receipts are linked to this client. Link a receipt to a client when you check it.':'Tähän asiakkaaseen ei ole liitetty laskuttamattomia kuitteja. Liitä kuitti asiakkaaseen tarkistaessasi sen.',
 'Add selected as lines':'Lisää valitut riveiksi','Added at cost, before VAT.':'Lisätään hankintahintaan, ilman ALV:ia.','Receipt':'Kuitti',
@@ -1861,7 +1861,7 @@ function openInvoiceEditor(id,preClient,tpl){
     <div class="grid2">
       <div class="f"><label>Quantity</label><input data-l="qty" data-i="${i}" inputmode="decimal" value="${esc(String(l.qty).replace('.',','))}"></div>
       <div class="f"><label>Unit</label><select data-l="unit" data-i="${i}">${(()=>{const nm=unitNames(),cur=nm.includes(l.unit)?l.unit:(nm.includes(TT(l.unit))?TT(l.unit):l.unit);return nm.concat(nm.includes(cur)?[]:[cur]).map(u=>`<option ${u===cur?'selected':''}>${esc(u)}</option>`).join('')})()}</select></div>
-      <div class="f"><label>Unit price excl. VAT (€)</label><input data-l="price" data-i="${i}" inputmode="decimal" value="${esc(inputMoney(l.unitCents))}" placeholder="0,00"></div>
+      <div class="f"><label>Unit price (€)</label><input data-l="price" data-i="${i}" inputmode="decimal" value="${esc(inputMoney(l.unitCents))}" placeholder="0,00"></div>
       <div class="f"><label>VAT</label><select data-l="vat" data-i="${i}">${VATS.map(v=>`<option value="${v}" ${+l.vatRate===v?'selected':''}>${fmtRate(v)} %</option>`).join('')}</select></div>
     </div></div>`;
   const lineDone=(l,i)=>`<div class="line done" data-i="${i}"><div class="dn"><div class="dt">${esc((l.desc||'').trim())||'<span class="muted">No description</span>'}<div class="small muted">${String(l.qty).replace('.',',')} ${esc(l.unit)} × ${num(l.unitCents)} € · ${fmtRate(l.vatRate)} % VAT${l.receiptId?' · from receipt':''}</div></div><div class="mono dam">${num(Math.round(l.qty*l.unitCents))} €</div></div><div class="dbt"><button class="btn sm ur" data-act="lnEdit" data-i="${i}" aria-label="Edit line ${i+1}">${PEN_SVG}</button>${inv.lines.length>1?`<button class="btn sm trash" data-act="lnDel" data-i="${i}" aria-label="Remove line ${i+1}">${TRASH_SVG}</button>`:''}</div></div>`;
